@@ -1,18 +1,8 @@
 {{template "base" .}}
 {{define "content"}}
-<div class="container">
-    <div class="row">
-        <h1>This is about page</h1>
-        <p>This about page is made by us to inform about us</p>
-        <p>This data came from template: {{index .MapString "test"}}</p>
-        <p>
-            {{if ne (index .MapString "remoteIP") ""}}
-             Your remote addres is {{index .MapString "remoteIP"}}
-             {{else}}
-            I dont know your remote addres yet.Please visit <a href="/">Home Page </a> so that i can set 
-            addres
-            {{end}}
-        </p>
+    <div class="container">
+        <div class="row">
+            <h1 class="text-align-center mt-4">About our service</h1>
+         </div>
     </div>
-</div>
 {{end}}

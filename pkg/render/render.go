@@ -51,6 +51,7 @@ func CreateTemplateCash() (map[string]*template.Template, error) {
 		fmt.Println("current page:", page)
 		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
 		if err != nil {
+			fmt.Println("the error source", name, err)
 			return myCash, err
 		}
 		matches, err := filepath.Glob("./templates/*.layout.html")

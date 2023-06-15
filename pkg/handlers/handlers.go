@@ -34,3 +34,27 @@ func (repo *Repository) About(w http.ResponseWriter, r *http.Request) {
 	stringMap["remoteIP"] = remoteIP
 	render.RenderTemplate(w, "about.page.html", &models.TemplateData{MapString: stringMap})
 }
+func (repo *Repository) Middle(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "middle.page.html", &models.TemplateData{})
+}
+func (repo *Repository) Economic(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "economic.page.html", &models.TemplateData{})
+}
+func (repo *Repository) Reserve(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "reserve.page.html", &models.TemplateData{})
+}
+func (repo *Repository) Availability(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "availability.page.html", &models.TemplateData{})
+}
+func (repo *Repository) Business(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "availability.page.html", &models.TemplateData{})
+}
+func (repo *Repository) Contacts(w http.ResponseWriter, r *http.Request) {
+
+	render.RenderTemplate(w, "contacts.page.html", &models.TemplateData{})
+}

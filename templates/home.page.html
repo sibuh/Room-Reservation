@@ -1,12 +1,55 @@
 {{template "base" .}}
 {{define "content"}}
-<div class="container">
-    <div class="row">
-        <h1>This is home page</h1>
-        <p>This home page is made by sibhat</p>
-        <p>This home page is made by sibhat</p>
-        <p>This data came from template: {{index .MapString "test"}}</p>
-        <img src="/static/images/house.jpeg" height="1330" width="2364">
+<div class="Container">
+    <div id="main-carousel" class="carousel slide carousel-fade" data-ride="carousel">
+      <ol class="carousel-indicators">
+        <li data-target="#main-carousel" data-slide-to="0" class="active"></li>
+        <li data-target="#main-carousel" data-slide-to="1"></li>
+        <li data-target="#main-carousel" data-slide-to="2"></li>
+      </ol>
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="/static/images/woman-laptop.png" class="d-block w-100" alt="woman with laptop">
+            <div class="carousel-caption d-none d-md-block">
+              <h5>First Page</h5>
+              <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
+            </div>
+        </div>
+        <div class="carousel-item">
+          <img src="/static/images/outside.png" class="d-block w-100" alt="outside">
+          <div class="carousel-caption d-none d-md-block">
+            <h5>Second Page</h5>
+            <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <img src="/static/images/tray.png" class="d-block w-100" alt="This is tray">
+          <div class="carousel-caption d-none d-md-block">
+            <h5>Third Page</h5>
+            <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
+          </div>
+        </div>
     </div>
-</div>
+  </div>
+  <div class="container">
+      <div class="row">
+        <h1 class="text-center mt-4">Well come to Abrha's hotel</h1>
+      </div>
+      <div class="row">
+        <div class="col">
+            <p>
+              A paragraph is defined as “a group of sentences or a single sentence
+              that forms a unit” (Lunsford and Connors 116). Length and appearance 
+              do not determine whether a section in a paper is a paragraph. 
+              For instance, in some styles of writing, particularly journalistic styles, 
+              a paragraph can be just one sentence long.    
+            </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col text-center">
+            <a href="/reserve" class="btn btn-success">Reserve Now</a>
+        </div>
+      </div>
+  </div>
 {{end}}
