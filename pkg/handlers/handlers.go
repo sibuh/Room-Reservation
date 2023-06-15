@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"booking/pkg/config"
+	"booking/pkg/models"
+	"booking/pkg/render"
 	"net/http"
-	"webApp/pkg/config"
-	"webApp/pkg/models"
-	"webApp/pkg/render"
 )
 
 type Repository struct {

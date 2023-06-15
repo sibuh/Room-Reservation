@@ -1,14 +1,14 @@
 package render
 
 import (
+	"booking/pkg/config"
+	"booking/pkg/models"
 	"bytes"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
-	"webApp/pkg/config"
-	"webApp/pkg/models"
 )
 
 var functions = template.FuncMap{}

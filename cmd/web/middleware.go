@@ -25,5 +25,5 @@ func Nosurf(next http.Handler) http.Handler {
 	return csrfHandler
 }
 func LoadSession(next http.Handler) http.Handler {
-	return session.LoadAndSave(next) 
+	return session.LoadAndSave(next)
 }
