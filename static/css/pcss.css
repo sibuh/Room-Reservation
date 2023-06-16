@@ -1,0 +1,14 @@
+.my-footer{
+    height: 5em;
+    background-color: rgb(40, 62, 103);
+    color: White;
+    margin-top: 1.5em;
+    padding:1em;
+    font-size: 80%;
+  }
+  .business-room{
+    max-width: 80%;
+  }
+  .redText{
+    color: red;
+  }

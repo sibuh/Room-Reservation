@@ -1,28 +1,11 @@
 {{template "base" .}}
 {{define "content"}}
-<div class="container">
-    <div class="row">
-      <div class="col-md-8">
-        <h1 class=" text-center mt-5">Make Reservation</h1>
-        <form method="post" action="" name="needs-no-valdation" novalidate class="needs-validation">
+<div class="container col-md-6">
+    <div class="row" >
+      <div class="col-md-12">
+        <h1 class="">Reserve available room</h1>
+        <form method="" action="" name="needs-no-valdation" novalidate class="needs-validation">
           <div class="form-group">
-            <label for="first-name">First Name</label>
-            <input required type="text" class="form-control" id="first-name">
-          </div>
-          <div class="form-group">
-            <label for="last-name">last Name</label>
-            <input required type="text" class="form-control" id="last-name">
-          </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input required type="text" class="form-control" id="email">
-          </div>
-          <div class="form-group">
-            <label for="phone-number">Phone Number</label>
-            <input required type="text" class="form-control" id="phone-number">
-          </div>
-          <div class="form-group">
-            <p>Enter Date</p>
             <div class="row" id="reservation-date">
               <div class="col" >
                 <input type="text" required name="start" class="form-control" placeholder="start-date" id="date">
@@ -33,8 +16,18 @@
             </div>
           </div>
           <hr>
-          <button type="submit" class="btn btn-primary">Make Reservation</button>
+          <button type="submit" id="reserveButton" class="btn btn-primary">Reserve</button>
         </form>
       </div>
     </div>
+{{end}}
+
+{{define "js"}}
+    <script>
+        const elem = document.getElementById("reservation-date");
+        const rangepicker = new DateRangePicker(elem, {
+        format:"yyyy-mm-dd"
+        });
+    </script>
+ 
 {{end}}
