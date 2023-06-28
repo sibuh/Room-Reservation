@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"booking/internal/forms"
+	"booking/internal/helpers"
 	"booking/internal/pkg/config"
 	"booking/internal/pkg/models"
 	"booking/internal/pkg/render"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 )
 
@@ -21,19 +23,11 @@ func NewRepository(a *config.AppConfig) *Repository {
 
 func (repo *Repository) Home(w http.ResponseWriter, r *http.Request) {
 	stringMap := make(map[string]string)
-	stringMap["test"] = "This is template data"
-	remoteIP := r.RemoteAddr
-	repo.App.Session.Put(r.Context(), "remote_ip", remoteIP)
-	render.RenderTemplate(w, r, "home.page.html", &models.TemplateData{MapString: stringMap,
-		Flash: "abu",
-	})
+	render.RenderTemplate(w, r, "home.page.html", &models.TemplateData{MapString: stringMap})
 
 }
 func (repo *Repository) About(w http.ResponseWriter, r *http.Request) {
 	stringMap := make(map[string]string)
-	stringMap["test"] = "This is template data"
-	remoteIP := repo.App.Session.GetString(r.Context(), "remote_ip")
-	stringMap["remoteIP"] = remoteIP
 	render.RenderTemplate(w, r, "about.page.html", &models.TemplateData{MapString: stringMap})
 }
 func (repo *Repository) Middle(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +40,36 @@ func (repo *Repository) Economic(w http.ResponseWriter, r *http.Request) {
 }
 func (repo *Repository) Reserve(w http.ResponseWriter, r *http.Request) {
 
+	render.RenderTemplate(w, r, "reserve.page.html", &models.TemplateData{})
+}
+
+func (repo *Repository) PostReserve(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		repo.App.InfoLog.Println(err)
+		return
+	}
+	reservation := models.Reservation{
+		FirstName:   r.Form.Get("first_name"),
+		LastName:    r.Form.Get("last_name"),
+		PhoneNumber: r.Form.Get("phone_number"),
+		Email:       r.Form.Get("email"),
+	}
+	form := forms.New(r.PostForm)
+	data := make(map[string]interface{})
+	data["reservation"] = reservation
+	if r.Form.Get("first_name") == "" {
+		form.Errors.Add("first_name", "this filed is mandatory")
+	}
+	fmt.Println(form.Errors.Get("first_name"))
+	fmt.Println(form.Valid())
+	if !form.Valid() {
+		render.RenderTemplate(w, r, "reserved.page.html",
+			&models.TemplateData{
+				Form: form,
+				Data: data,
+			})
+	}
 	render.RenderTemplate(w, r, "reserve.page.html", &models.TemplateData{})
 }
 func (repo *Repository) Availability(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +97,8 @@ func (repo *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request
 	}
 	jresponse, err := json.MarshalIndent(response, "", "")
 	if err != nil {
-		log.Println(err)
+		helpers.ServerError(w, err)
+		return
 	}
 	w.Write(jresponse)
 	w.WriteHeader(http.StatusOK)

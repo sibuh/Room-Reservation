@@ -20,7 +20,10 @@ func routes(repo *handlers.Repository) http.Handler {
 	mux.Get("/middle", repo.Middle)
 	mux.Get("/economic", repo.Economic)
 	mux.Get("/contacts", repo.Contacts)
+
 	mux.Get("/reserve", repo.Reserve)
+	mux.Post("/postreserve", repo.PostReserve)
+
 	mux.Get("/availability", repo.Availability)
 	mux.Post("/checkRooms", repo.CheckAvailability)
 	fileServer := http.FileServer(http.Dir("./static/"))
