@@ -5,7 +5,4 @@ create_table("users") {
   t.Column("email", "string", {})
   t.Column("password","string",{"size":60})
   t.Column("access_level","integer",{"default":1})
-
-  
- 
 }
