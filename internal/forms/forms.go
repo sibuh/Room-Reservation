@@ -17,7 +17,7 @@ func New(data url.Values) *Form {
 	}
 }
 func (f *Form) Has(field string, fo url.Values) {
-	x := fo.Get("field")
+	x := f.Get("field")
 	fmt.Println(x)
 	if x == "" {
 		f.Errors.Add(field, "This field is mandatory")
@@ -25,4 +25,12 @@ func (f *Form) Has(field string, fo url.Values) {
 }
 func (f *Form) Valid() bool {
 	return len(f.Errors) == 0
+}
+func (f *Form) Required() {
+	var fields = []string{"first_name", "last_name", "email", "phone"}
+	for _, field := range fields {
+		if f.Get(field) == "" {
+			f.Errors.Add(field, "Field is Required")
+		}
+	}
 }

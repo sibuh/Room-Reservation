@@ -1,0 +1,10 @@
+{{template "base" .}}
+{{define "content"}}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class=" text-center mt-5">Reservation Summary</h1>
+            <label for="">{{index .Data "reserved"}}</label>
+        </div>
+    </div>
+    {{end}}
