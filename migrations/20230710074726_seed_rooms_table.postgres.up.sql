@@ -1,0 +1,3 @@
+INSERT INTO "public"."rooms" ("id","room_name","created_at","updated_at") VALUES (1,'g01','2023-07-03 00:00:00','2023-07-03 00:00:00');
+INSERT INTO "public"."rooms" ("id","room_name","created_at","updated_at") VALUES (2,'g02','2023-07-04 00:00:00','2023-07-04 00:00:00');
+INSERT INTO "public"."rooms" ("id","room_name","created_at","updated_at") VALUES (3,'g03','2023-07-04 00:00:00','2023-07-04 00:00:00');

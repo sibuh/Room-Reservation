@@ -10,11 +10,7 @@ import (
 
 func Routes(repo *handlers.Repository) http.Handler {
 	mux := chi.NewRouter()
-	//mux.Use(middleware.Recoverer)
-	//mux.Use(writeToConsole)
 	mux.Use(middle.Nosurf)
-	//mux.Use(middle.LoadSession)
-	//mux.Use()
 	mux.Get("/", repo.Home)
 	mux.Get("/about", repo.About)
 	mux.Get("/business", repo.Business)

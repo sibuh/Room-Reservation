@@ -1,0 +1,2 @@
+INSERT INTO "public"."restrictions" ("id","restriction_name","created_at","updated_at") VALUES (1,'reserved','2023-07-03 00:00:00','2023-07-03 00:00:00');
+INSERT INTO "public"."restrictions" ("id","restriction_name","created_at","updated_at") VALUES (2,'blocked','2023-07-04 00:00:00','2023-07-04 00:00:00');

@@ -5,7 +5,10 @@ import (
 	"booking/internal/helpers"
 	"booking/internal/pkg/config"
 	"booking/internal/pkg/handlers"
+	"booking/internal/pkg/models"
 	"booking/internal/pkg/render"
+	"io/ioutil"
+	"strings"
 
 	red "booking/platform/redis"
 
@@ -17,6 +20,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	mail "github.com/xhit/go-simple-mail"
 
 	"github.com/alexedwards/scs/v2"
 )
@@ -41,9 +46,16 @@ func Initiate() {
 		log.Fatal(err)
 	}
 	defer db.SQL.Close()
+	//
+	ListenToEmailChan()
+	fmt.Println("created message")
+	app.EmailChan = make(chan models.EmailData)
+	fmt.Println("stopped here")
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
+	time.Sleep(1 * time.Second)
+	//create template cache
 	tc, err := render.CreateTemplateCash()
 	if err != nil {
 		log.Fatal("can not template cashe")
@@ -54,7 +66,6 @@ func Initiate() {
 	app.ErrorLog = errLog
 	app.UseCashe = false
 	app.TemplateCashe = tc
-
 	render.NewApp(&app)
 	ra := red.NewRedisAdapter(client)
 	repo := handlers.NewRepository(&app, db, ra)
@@ -62,4 +73,41 @@ func Initiate() {
 	mux := routes.Routes(repo)
 	fmt.Println("server starting at port 8080")
 	log.Fatal(http.ListenAndServe(PortNumber, mux))
+
+}
+func SendEmail(msg models.EmailData) {
+	server := mail.NewSMTPClient()
+	server.Host = "localhost"
+	server.Port = 1025
+	server.KeepAlive = false
+	server.ConnectTimeout = 5 * time.Second
+	server.SendTimeout = 5 * time.Second
+	client, err := server.Connect()
+	if err != nil {
+		app.ErrorLog.Println(err)
+	}
+	email := mail.NewMSG()
+	email.SetFrom(msg.From).AddTo(msg.To).SetSubject(msg.Subject)
+	basic, err := ioutil.ReadFile(fmt.Sprintf("./email-template/%s", msg.Template))
+	//fmt.Println(string(basic))
+	if err != nil {
+		app.ErrorLog.Println(err)
+	}
+	if string(basic) == "" {
+		email.SetBody(mail.TextPlain, msg.Content)
+	} else {
+		bodyToSend := string(basic)
+		bodyString := strings.Replace(bodyToSend, "[%BODY%]", msg.Content, 1)
+		email.SetBody(mail.TextHTML, bodyString)
+	}
+	err = email.Send(client)
+	if err != nil {
+		app.ErrorLog.Println(err)
+	}
+}
+func ListenToEmailChan() {
+	go func() {
+		msg := <-app.EmailChan
+		SendEmail(msg)
+	}()
 }

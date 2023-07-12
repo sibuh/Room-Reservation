@@ -1,6 +1,7 @@
 package config
 
 import (
+	"booking/internal/pkg/models"
 	"html/template"
 	"log"
 
@@ -14,4 +15,5 @@ type AppConfig struct {
 	IsProduction  bool
 	InfoLog       *log.Logger
 	ErrorLog      *log.Logger
+	EmailChan     chan models.EmailData
 }

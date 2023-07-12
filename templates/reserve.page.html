@@ -6,8 +6,8 @@
       <h1 class=" text-center mt-5">Make Reservation</h1>
       {{$choose:= index .Data "choose"}}
       <p>
-       StartDate: {{$choose.StartDate}}<br>
-       EndDate: {{$choose.EndDate}}
+       StartDate: {{ format $choose.StartDate}}<br>
+       EndDate: {{format $choose.EndDate}}
       </p>
       <form  action="/postreserve" method="post" class="" novalidate >
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">

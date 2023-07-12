@@ -9,11 +9,15 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/justinas/nosurf"
 )
 
-var functions = template.FuncMap{}
+var functions = template.FuncMap{"format": func(t time.Time) string {
+	return t.Format("2006-01-02")
+}}
+
 var app *config.AppConfig
 
 func NewApp(a *config.AppConfig) {

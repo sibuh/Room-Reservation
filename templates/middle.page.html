@@ -27,3 +27,13 @@
     </div>
   </div>
 {{end}}
+
+{{define "js"}}
+<script>
+  const url = "http://localhost:8080/middle"
+  fetch(url)
+    .then(data=>{return data.json()})
+    .then(res=>{console.log(res)})
+</script>
+
+{{end}}
