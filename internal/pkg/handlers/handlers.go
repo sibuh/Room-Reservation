@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 type Repository struct {
@@ -68,6 +69,7 @@ func (repo *Repository) PostReserve(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal([]byte(res), &v)
 	if err != nil {
 		helpers.ServerError(w, err)
+		return
 	}
 	fmt.Println("this is read from redis,in post reserve", v)
 	var reservation = models.Reservation{
@@ -116,18 +118,23 @@ func (repo *Repository) PostReserve(w http.ResponseWriter, r *http.Request) {
 		helpers.ServerError(w, err)
 		return
 	}
-	fmt.Println("\u001b[31m;1m", "Set reservation data to redis")
-	repo.Redis.SetToRedis(context.Background(), "reservation", reservation)
-	msg := models.EmailData{
-		From:     "sibuh@gmail.com",
-		To:       reservation.Email,
-		Subject:  "Confirmation Email",
-		Content:  fmt.Sprintf("This email is to confirmation that you have reserved %s from %s to %s", reservation.Room.RoomName, reservation.StartDate, reservation.EndDate),
-		Template: "basic.html",
+	fmt.Println("\u001b[31m", "Set session data to redis")
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
+	defer cancel()
+	err = repo.Redis.SetToRedis(ctx, "reservation", reservation)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
 	}
-	repo.App.ErrorLog.Println(msg)
-	repo.App.EmailChan <- msg
-	fmt.Println("sent msg to channel")
+	// msg := models.EmailData{
+	// 	From:     "sibuh@gmail.com",
+	// 	To:       reservation.Email,
+	// 	Subject:  "Confirmation Email",
+	// 	Content:  fmt.Sprintf("This email is to confirmation that you have reserved %s from %s to %s", reservation.Room.RoomName, reservation.StartDate, reservation.EndDate),
+	// 	Template: "basic.html",
+	// }
+	// repo.App.EmailChan <- msg
+	//fmt.Println("sent msg to channel in Reservation")
 	http.Redirect(w, r, "/summary", http.StatusSeeOther)
 }
 func (repo *Repository) Summary(w http.ResponseWriter, r *http.Request) {
@@ -136,9 +143,16 @@ func (repo *Repository) Summary(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(res, "read from the redis in summary")
 	if err != nil {
 		helpers.ServerError(w, err)
+		return
 	}
-	fmt.Println(res)
-	data["reserved"] = res
+
+	var reservation models.Reservation
+	err = json.Unmarshal([]byte(res), &reservation)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	data["reserved"] = reservation
 	render.Template(w, r, "summary.page.html", &models.TemplateData{Data: data})
 }
 
@@ -158,8 +172,18 @@ func (repo *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request
 	var layout = "2006-01-02"
 	start := r.PostFormValue("start_date")
 	end := r.PostFormValue("end_date")
-	roomID := r.PostFormValue("room_id")
-
+	var Input = models.RoomAvailabilityRequest{
+		StartDate: start,
+		EndDate:   end,
+	}
+	err := validation.ValidateStruct(&Input,
+		validation.Field(&Input.StartDate, validation.Required.Error("SatrtDate is Required")),
+		validation.Field(&Input.EndDate, validation.Required.Error("EndDate is Required"), validation.Date(layout).Error("wrong layout of date")),
+	)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
 	startDate, err := time.Parse(layout, start)
 	if err != nil {
 		helpers.ServerError(w, err)
@@ -170,88 +194,88 @@ func (repo *Repository) CheckAvailability(w http.ResponseWriter, r *http.Request
 		helpers.ServerError(w, err)
 		return
 	}
-
-	if roomID != "" {
-		rID, err := strconv.Atoi(roomID)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		reserved, err := repo.DB.SearchAvailabilityByRoomID(rID, startDate, endDate)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		if reserved {
-			data := make(map[string]interface{})
-			data["reserved"] = "The room is already reserved"
-			render.Template(w, r, "available.page.html", &models.TemplateData{
-				Data: data,
-			})
-		} else {
-			data := make(map[string]interface{})
-			data["reserved"] = "The room is free for reservation"
-			render.Template(w, r, "available.page.html", &models.TemplateData{
-				Data: data,
-			})
-		}
-	} else {
-		rooms, err := repo.DB.SearchAvailableRooms(startDate, endDate)
-		fmt.Println(rooms)
-		if err != nil {
-			helpers.ServerError(w, err)
-			return
-		}
-		if len(rooms) == 0 {
-			w.Write([]byte("No available rooms"))
-			http.Redirect(w, r, "/availability", http.StatusSeeOther)
-			return
-		} else {
-			res := &models.Reservation{
-				StartDate: startDate,
-				EndDate:   endDate,
-			}
-
-			err = repo.Redis.SetToRedis(context.Background(), "reservation", res)
-			if err != nil {
-				helpers.ServerError(w, err)
-			}
-			data := make(map[string]interface{})
-			data["rooms"] = rooms
-			render.Template(w, r, "availablerooms.page.html", &models.TemplateData{
-				Data: data,
-			})
-		}
+	rooms, err := repo.DB.SearchAvailableRooms(startDate, endDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
 	}
+	if len(rooms) == 0 {
+		w.Write([]byte("No available rooms"))
+		return
+	} else {
+		res := &models.Reservation{
+			StartDate: startDate,
+			EndDate:   endDate,
+		}
+		data := make(map[string]interface{})
+		data["rooms"] = rooms
+		render.Template(w, r, "availablerooms.page.html", &models.TemplateData{
+			Data: data,
+		})
+		err = repo.Redis.SetToRedis(context.Background(), "reservation", res)
+		if err != nil {
+			helpers.ServerError(w, err)
+			return
+		}
+
+	}
+
 }
 func (repo *Repository) Chooseroom(w http.ResponseWriter, r *http.Request) {
 	roomID, err := strconv.Atoi(chi.URLParam(r, "id"))
-	fmt.Println("this is room id", roomID)
+	fmt.Println("This is room id", roomID)
 	if err != nil {
 		helpers.ServerError(w, err)
+		return
 	}
 
 	value, err := repo.Redis.GetFromRedis(context.Background(), "reservation")
 	if err != nil {
 		helpers.ServerError(w, err)
+		return
 	}
 	fmt.Println(value)
-	var v models.Reservation
-	err = json.Unmarshal([]byte(value), &v)
+	var res models.Reservation
+	err = json.Unmarshal([]byte(value), &res)
 	if err != nil {
 		helpers.ServerError(w, err)
+		return
 	}
-	v.RoomID = roomID
-	fmt.Println(v, "roomID added")
-	err = repo.Redis.SetToRedis(context.Background(), "reservation", v)
-	data := map[string]interface{}{}
-	data["choose"] = v
+	res.RoomID = roomID
+	fmt.Println(res, "roomID added")
+	err = repo.Redis.SetToRedis(context.Background(), "reservation", res)
 	if err != nil {
 		helpers.ServerError(w, err)
-	}
+		return
 
-	render.Template(w, r, "reserve.page.html", &models.TemplateData{
-		Data: data,
-	})
+	}
+	data := make(map[string]interface{})
+	data["choosen"] = res
+	render.Template(w, r, "reserve.page.html", &models.TemplateData{Data: data})
+
+}
+func (repo *Repository) AddRooms(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	var req models.AddRoomRequest
+	req.RoomNumber = r.Form.Get("room_number")
+	req.RoomType = r.Form.Get("room_type")
+	err = validation.ValidateStruct(&req,
+		validation.Field(&req.RoomNumber, validation.Required.Error("room_number is required")),
+		validation.Field(&req.RoomType, validation.Required.Error("room_type is required")))
+	if err != nil {
+		helpers.ClientError(w, http.StatusBadRequest)
+		return
+	}
+	err = repo.DB.InsertRooms(req)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	} else {
+		render.Template(w, r, "inserteroom.page.html", &models.TemplateData{})
+	}
 
 }

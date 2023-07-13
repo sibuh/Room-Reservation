@@ -1,10 +1,13 @@
 {{template "base" .}}
 {{define "content"}}
 <div class="container">
-    <div class="row">
-        <div class="col-md-8">
-            <h1 class=" text-center mt-5">Reservation Summary</h1>
-            <label for="">{{index .Data "reserved"}}</label>
+   {{$res := index .Data "reserved"}}
+    <div class="col-md-8">
+         <h1 class=" text-center mt-5">Reservation Summary</h1> 
+         <p> FirstName: {{$res.FirstName}}</p>
+         <p> LastName:{{$res.LastName}}</p>
+         <p> Email:{{$res.Email}}</p>
+         <p> Phone:{{$res.Phone}}</p>
         </div>
-    </div>
-    {{end}}
+</div>
+{{end}}

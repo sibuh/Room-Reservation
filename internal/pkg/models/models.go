@@ -27,10 +27,10 @@ type User struct {
 	UpdatedAt   time.Time
 }
 type Room struct {
-	ID        int
-	RoomName  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        int       `json:"id"`
+	RoomName  string    `json:"room_name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 type Restriction struct {
 	ID              int
@@ -39,17 +39,17 @@ type Restriction struct {
 	UpdatedAt       time.Time
 }
 type Reservation struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Email     string
-	Phone     string
-	StartDate time.Time
-	EndDate   time.Time
-	RoomID    int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Room      Room
+	ID        int       `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+	RoomID    int       `json:"room_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Room      Room      `json:"room"`
 }
 type RoomRestriction struct {
 	ID            int
@@ -70,4 +70,12 @@ type EmailData struct {
 	Subject  string
 	Content  string
 	Template string
+}
+type RoomAvailabilityRequest struct {
+	StartDate string
+	EndDate   string
+}
+type AddRoomRequest struct {
+	RoomNumber string
+	RoomType   string
 }

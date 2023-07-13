@@ -107,3 +107,17 @@ func (p *postgresDbRepo) SearchAvailableRooms(startDate, endDate time.Time) ([]m
 
 	return rooms, nil
 }
+func (p *postgresDbRepo) InsertRooms(arg models.AddRoomRequest) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	stmt := `insert into rooms (room_number,created_at,updated_at,room_type) values($1,$2,$3,$4)`
+	_, err := p.DB.ExecContext(ctx, stmt,
+		arg.RoomNumber,
+		time.Now(),
+		time.Now(),
+		arg.RoomType)
+	if err != nil {
+		return err
+	}
+	return nil
+}

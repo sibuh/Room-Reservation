@@ -48,7 +48,7 @@ func Initiate() {
 	defer db.SQL.Close()
 	//
 	ListenToEmailChan()
-	fmt.Println("created message")
+	fmt.Println("created message channel")
 	app.EmailChan = make(chan models.EmailData)
 	fmt.Println("stopped here")
 	client := redis.NewClient(&redis.Options{
