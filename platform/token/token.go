@@ -2,6 +2,7 @@ package token
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -42,18 +43,17 @@ func (j *jwtMaker) CreateToken(payload Payload) (string, error) {
 	}
 	return tokenString, nil
 }
-func (j *jwtMaker) VerifyToken(token string) *Payload {
+func (j *jwtMaker) VerifyToken(tokenString string) *Payload {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, errors.New("wrong signing Method")
+			return nil, fmt.Errorf("unexpected signing Method %s", token.Header["alg"])
 		}
 		return nil, nil
 	}
-	Token, err := jwt.ParseWithClaims(token, &Payload{}, keyFunc)
+	token, err := jwt.ParseWithClaims(tokenString, &Payload{}, keyFunc)
 	if err != nil {
 		return &Payload{}
 	}
-
-	return Token.Claims.(*Payload)
+	return token.Claims.(*Payload)
 }

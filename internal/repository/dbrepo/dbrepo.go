@@ -135,11 +135,11 @@ func (p *postgresDbRepo) Login(arg models.LoginRequest) (string, error) {
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&user.PasswordHash,
 		&user.AccessLevel,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&user.Role,
+		&user.PasswordHash,
 	)
 	if err != nil {
 		return "", err
@@ -158,5 +158,5 @@ func (p *postgresDbRepo) Login(arg models.LoginRequest) (string, error) {
 		}
 		return tokenString, nil
 	}
-	return "", errors.New("password didnot match")
+	return "", errors.New("wrong password")
 }

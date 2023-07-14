@@ -53,6 +53,10 @@ func (repo *Repository) Reserve(w http.ResponseWriter, r *http.Request) {
 
 	render.Template(w, r, "reserve.page.html", &models.TemplateData{})
 }
+func (repo *Repository) LoginPage(w http.ResponseWriter, r *http.Request) {
+
+	render.Template(w, r, "login.page.html", &models.TemplateData{})
+}
 
 func (repo *Repository) PostReserve(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
@@ -281,16 +285,18 @@ func (repo *Repository) AddRooms(w http.ResponseWriter, r *http.Request) {
 }
 func (repo *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
+	fmt.Println(err)
 	if err != nil {
 		helpers.ClientError(w, http.StatusBadRequest)
 		return
 	}
 	var req models.LoginRequest
 	req.Email = r.Form.Get("email")
-	req.Password = r.Form.Get("pasword")
+	req.Password = r.Form.Get("password")
+	fmt.Println(req.Email, req.Password)
 	err = validation.ValidateStruct(&req,
 		validation.Field(&req.Email, validation.Required.Error("email is required")),
-		validation.Field(&req.Password, validation.Required.Error("password is required"), validation.Length(8, 8)))
+		validation.Field(&req.Password, validation.Required.Error("password is required"), validation.Length(6, 8)))
 	if err != nil {
 		helpers.ClientError(w, http.StatusBadRequest)
 		return
@@ -300,15 +306,16 @@ func (repo *Repository) Login(w http.ResponseWriter, r *http.Request) {
 		helpers.ServerError(w, err)
 		return
 	}
-	err = repo.Redis.SetToRedis(context.Background(), "token", tokenString)
+	err = repo.Redis.SetToRedis(context.Background(), "tokenString", tokenString)
 	if err != nil {
 		helpers.ServerError(w, err)
 		return
 	}
 	cookie := http.Cookie{
-		Name:  "sesion_token",
+		Name:  "token_session",
 		Value: tokenString,
 	}
 	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }

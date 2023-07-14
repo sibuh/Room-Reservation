@@ -21,6 +21,9 @@ func Routes(repo *handlers.Repository) http.Handler {
 	mux.Get("/reserve", repo.Reserve)
 	mux.Post("/postreserve", repo.PostReserve)
 	mux.Get("/summary", repo.Summary)
+	//user handlers
+	mux.Get("/login", repo.Login)
+	mux.Get("/loginpage", repo.LoginPage)
 
 	mux.Get("/availability", repo.Availability)
 	mux.Post("/checkRooms", repo.CheckAvailability)

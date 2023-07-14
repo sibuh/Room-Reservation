@@ -7,6 +7,7 @@ import (
 	"booking/internal/pkg/handlers"
 	"booking/internal/pkg/models"
 	"booking/internal/pkg/render"
+	"booking/routes"
 	"io/ioutil"
 	"strings"
 
@@ -14,7 +15,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"booking/routes"
 	"fmt"
 	"log"
 	"net/http"
