@@ -6,8 +6,11 @@
     padding:1em;
     font-size: 80%;
   }
-  .business-room{
+  .business-class{
     max-width: 80%;
+  }
+  .login{
+    text-align: right;
   }
   .redText{
     color: red;

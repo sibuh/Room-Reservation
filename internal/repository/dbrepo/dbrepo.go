@@ -4,8 +4,11 @@ import (
 	"booking/internal/pkg/config"
 	"booking/internal/pkg/models"
 	"booking/internal/repository"
+	"booking/platform/pass"
+	"booking/platform/token"
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -120,4 +123,40 @@ func (p *postgresDbRepo) InsertRooms(arg models.AddRoomRequest) error {
 		return err
 	}
 	return nil
+}
+func (p *postgresDbRepo) Login(arg models.LoginRequest) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	stmt := `select * from users where email=$1`
+	var user models.User
+	row := p.DB.QueryRowContext(ctx, stmt, arg.Email)
+	err := row.Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.PasswordHash,
+		&user.AccessLevel,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.Role,
+	)
+	if err != nil {
+		return "", err
+	}
+	match := pass.CheckPasswordHash(arg.Password, user.PasswordHash)
+	if match {
+		jwt := token.NewJwtMaker("1234567890123456789012")
+		payload := token.Payload{
+			UserName:  user.FirstName,
+			CreatedAt: time.Now(),
+			Duration:  time.Hour * 24,
+		}
+		tokenString, err := jwt.CreateToken(payload)
+		if err != nil {
+			return "", err
+		}
+		return tokenString, nil
+	}
+	return "", errors.New("password didnot match")
 }

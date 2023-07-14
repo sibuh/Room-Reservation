@@ -1,0 +1,18 @@
+{{ template "base" .}}
+{{define "content"}}
+<div class="container">
+    <div class="row">
+        <div class="col">
+                <form action="/addroom" mathod="post" class="form-group">
+                    <label for="room_number"> RoomNumber</label>
+                    <input type="text" name="room_number" id="room_number" placeholder="room_number">
+                    <label for="room_number"> RoomName</label>
+                    <input type="text" name="room_name" id="room_name" placeholder="room_name">
+                </form>
+        </div>
+        <button href="/addroom">Add</button>
+        
+    </div>
+ 
+</div>
+{{end}}

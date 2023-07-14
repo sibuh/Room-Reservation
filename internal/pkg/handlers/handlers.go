@@ -275,7 +275,40 @@ func (repo *Repository) AddRooms(w http.ResponseWriter, r *http.Request) {
 		helpers.ServerError(w, err)
 		return
 	} else {
-		render.Template(w, r, "inserteroom.page.html", &models.TemplateData{})
+		render.Template(w, r, "insertroom.page.html", &models.TemplateData{})
 	}
+
+}
+func (repo *Repository) Login(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ClientError(w, http.StatusBadRequest)
+		return
+	}
+	var req models.LoginRequest
+	req.Email = r.Form.Get("email")
+	req.Password = r.Form.Get("pasword")
+	err = validation.ValidateStruct(&req,
+		validation.Field(&req.Email, validation.Required.Error("email is required")),
+		validation.Field(&req.Password, validation.Required.Error("password is required"), validation.Length(8, 8)))
+	if err != nil {
+		helpers.ClientError(w, http.StatusBadRequest)
+		return
+	}
+	tokenString, err := repo.DB.Login(req)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	err = repo.Redis.SetToRedis(context.Background(), "token", tokenString)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	cookie := http.Cookie{
+		Name:  "sesion_token",
+		Value: tokenString,
+	}
+	http.SetCookie(w, &cookie)
 
 }

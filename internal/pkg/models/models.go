@@ -17,14 +17,15 @@ type TemplateData struct {
 	Form      *forms.Form
 }
 type User struct {
-	ID          int
-	FirstName   string
-	LastName    string
-	Email       string
-	Password    string
-	AccessLevel string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           int
+	FirstName    string
+	LastName     string
+	Email        string
+	PasswordHash string
+	AccessLevel  string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Role         string
 }
 type Room struct {
 	ID        int       `json:"id"`
@@ -78,4 +79,8 @@ type RoomAvailabilityRequest struct {
 type AddRoomRequest struct {
 	RoomNumber string
 	RoomType   string
+}
+type LoginRequest struct {
+	Email    string
+	Password string
 }
