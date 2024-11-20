@@ -1,9 +1,9 @@
 package helpers
 
 import (
-	"booking/internal/pkg/config"
 	"fmt"
 	"net/http"
+	"reservation/internal/pkg/config"
 	"runtime/debug"
 )
 

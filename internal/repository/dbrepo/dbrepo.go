@@ -1,14 +1,14 @@
 package dbrepo
 
 import (
-	"booking/internal/pkg/config"
-	"booking/internal/pkg/models"
-	"booking/internal/repository"
-	"booking/pkg/pass"
-	"booking/pkg/token"
 	"context"
 	"database/sql"
 	"errors"
+	"reservation/internal/pkg/config"
+	"reservation/internal/pkg/models"
+	"reservation/internal/repository"
+	"reservation/pkg/pass"
+	"reservation/pkg/token"
 	"time"
 )
 

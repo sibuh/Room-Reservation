@@ -1,19 +1,19 @@
 package handlers
 
 import (
-	"booking/internal/driver"
-	"booking/internal/forms"
-	"booking/internal/helpers"
-	"booking/internal/pkg/config"
-	"booking/internal/pkg/models"
-	"booking/internal/pkg/render"
-	"booking/internal/repository"
-	"booking/internal/repository/dbrepo"
-	"booking/platform"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reservation/internal/driver"
+	"reservation/internal/forms"
+	"reservation/internal/helpers"
+	"reservation/internal/pkg/config"
+	"reservation/internal/pkg/models"
+	"reservation/internal/pkg/render"
+	"reservation/internal/platform"
+	"reservation/internal/repository"
+	"reservation/internal/repository/dbrepo"
 	"strconv"
 	"time"
 

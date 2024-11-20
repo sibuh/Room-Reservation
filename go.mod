@@ -1,4 +1,4 @@
-module booking
+module reservation
 
 go 1.23
 

@@ -1,9 +1,9 @@
 package config
 
 import (
-	"booking/internal/pkg/models"
 	"html/template"
 	"log"
+	"reservation/internal/pkg/models"
 
 	"github.com/alexedwards/scs/v2"
 )

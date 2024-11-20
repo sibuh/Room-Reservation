@@ -1,27 +1,26 @@
 package intiator
 
 import (
-	"booking/internal/driver"
-	"booking/internal/helpers"
-	"booking/internal/pkg/config"
-	"booking/internal/pkg/handlers"
-	"booking/internal/pkg/models"
-	"booking/internal/pkg/render"
-	"booking/internal/routes"
-	"io/ioutil"
-	"strings"
-
-	"github.com/go-redis/redis/v8"
-
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
-	mail "github.com/xhit/go-simple-mail"
+	"reservation/internal/driver"
+	"reservation/internal/helpers"
+	"reservation/internal/pkg/config"
+	"reservation/internal/pkg/handlers"
+	"reservation/internal/pkg/models"
+	"reservation/internal/pkg/render"
+	"reservation/internal/platform"
+	"reservation/internal/routes"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/go-redis/redis/v8"
+	mail "github.com/xhit/go-simple-mail"
 )
 
 const PortNumber = ":8080"
@@ -39,7 +38,7 @@ func Initiate() {
 	session.Cookie.Secure = app.IsProduction
 	app.Session = session
 	//connecting database
-	db, err := driver.ConnectSql("host=localhost port=5432 dbname=booking user=postgres password=sm211612")
+	db, err := driver.ConnectSql("host=localhost port=5432 dbname=reservation user=postgres password=sm211612")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +64,8 @@ func Initiate() {
 	app.UseCashe = false
 	app.TemplateCashe = tc
 	render.NewApp(&app)
-	ra := red.NewRedisAdapter(client)
+
+	ra := platform.NewRedisAdapter(client)
 	repo := handlers.NewRepository(&app, db, ra)
 	helpers.NewHelpers(&app)
 	mux := routes.Routes(repo)

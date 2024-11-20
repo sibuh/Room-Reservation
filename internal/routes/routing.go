@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"booking/internal/middle"
-	"booking/internal/pkg/handlers"
 	"net/http"
+	middle "reservation/internal/middleware"
+	"reservation/internal/pkg/handlers"
 
 	"github.com/go-chi/chi"
 )

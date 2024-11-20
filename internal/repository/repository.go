@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"booking/internal/pkg/models"
+	"reservation/internal/pkg/models"
 	"time"
 )
 

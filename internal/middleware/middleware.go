@@ -1,8 +1,8 @@
 package middle
 
 import (
-	"booking/internal/pkg/config"
 	"net/http"
+	"reservation/internal/pkg/config"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/justinas/nosurf"

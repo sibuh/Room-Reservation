@@ -1,14 +1,14 @@
 package render
 
 import (
-	"booking/internal/pkg/config"
-	"booking/internal/pkg/models"
 	"bytes"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
+	"reservation/internal/pkg/config"
+	"reservation/internal/pkg/models"
 	"time"
 
 	"github.com/justinas/nosurf"

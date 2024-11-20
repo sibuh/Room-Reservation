@@ -1,7 +1,7 @@
 package models
 
 import (
-	"booking/internal/forms"
+	"reservation/internal/forms"
 	"time"
 )
 

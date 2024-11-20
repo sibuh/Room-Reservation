@@ -1,6 +1,6 @@
 package main
 
-import "booking/intiator"
+import "reservation/intiator"
 
 func main() {
 	intiator.Initiate()
