@@ -12,7 +12,7 @@ services:
     environment:
       DB_USER: sibuh
       DB_PASSWORD: sibuh
-      DB_NAME: rr
+      DB_NAME: rrooms
     volumes:
       - db-data:/cockroach/cockroach-data
 volumes:

@@ -2,6 +2,6 @@ package reserve
 
 import "context"
 
-type db interface {
+type Querier interface {
 	ReserveRoom(ctx context.Context, param db.ReserveParam) (db.ReserveRoom, error)
 }
