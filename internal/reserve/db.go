@@ -1,7 +1,10 @@
 package reserve
 
-import "context"
+import (
+	"context"
+	"reservation/internal/storage/db"
+)
 
 type Querier interface {
-	ReserveRoom(ctx context.Context, param db.ReserveParam) (db.ReserveRoom, error)
+	HoldRoom(ctx context.Context, arg db.HoldRoomParams) (db.Room, error)
 }
