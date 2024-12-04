@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"reservation/internal/storage/db"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 )
 
 type ReserveRequest struct {
@@ -15,12 +15,12 @@ type ReserveRequest struct {
 	UserID  uuid.UUID `json:"user_id"`
 }
 type ReserveResponse struct {
-	ID         pgtype.UUID
+	ID         uuid.UUID
 	RoomNumber string
-	UserID     pgtype.UUID
-	HotelID    pgtype.UUID
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	UserID     uuid.UUID
+	HotelID    uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 type Session struct {
 	SessionID  uuid.UUID `json:"session_id"`
@@ -42,9 +42,13 @@ func Init(q Querier) Querier {
 
 func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (ReserveResponse, error) {
 	reservedRoom, err := r.Querier.HoldRoom(ctx, db.HoldRoomParams{
-		UserID:  pgtype.UUID(param.UserID),
-		HotelID: pgtype.UUID(param.HotelID),
-		ID:      pgtype.UUID(param.RoomID),
+		UserID: uuid.NullUUID{
+			UUID:  param.UserID,
+			Valid: true,
+		},
+		HotelID: param.HotelID,
+
+		ID: param.RoomID,
 	})
 	if err != nil {
 		return ReserveResponse{}, ErrReservationFailed
@@ -52,7 +56,7 @@ func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (Reserv
 	return ReserveResponse{
 		ID:         reservedRoom.ID,
 		RoomNumber: reservedRoom.RoomNumber,
-		UserID:     reservedRoom.UserID,
+		UserID:     reservedRoom.UserID.UUID,
 		HotelID:    reservedRoom.HotelID,
 		CreatedAt:  reservedRoom.CreatedAt,
 		UpdatedAt:  reservedRoom.UpdatedAt,

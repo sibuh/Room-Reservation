@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const holdRoom = `-- name: HoldRoom :one
@@ -18,9 +18,9 @@ returning id, room_number, user_id, hotel_id, created_at, updated_at
 `
 
 type HoldRoomParams struct {
-	UserID  pgtype.UUID
-	ID      pgtype.UUID
-	HotelID pgtype.UUID
+	UserID  uuid.NullUUID
+	ID      uuid.UUID
+	HotelID uuid.UUID
 }
 
 func (q *Queries) HoldRoom(ctx context.Context, arg HoldRoomParams) (Room, error) {

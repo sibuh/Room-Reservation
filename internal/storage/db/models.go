@@ -5,33 +5,36 @@
 package db
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Hotel struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	Name      string
-	Star      pgtype.Int4
+	Star      sql.NullInt32
 	Location  []float64
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Room struct {
-	ID         pgtype.UUID
+	ID         uuid.UUID
 	RoomNumber string
-	UserID     pgtype.UUID
-	HotelID    pgtype.UUID
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	UserID     uuid.NullUUID
+	HotelID    uuid.UUID
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type User struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	FirstName string
 	LastName  string
 	Email     string
 	Password  string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

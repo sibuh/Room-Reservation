@@ -1,111 +1,110 @@
 package intiator
 
-import (
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+// import (
+// 	"fmt"
+// 	"io/ioutil"
+// 	"log"
+// 	"net/http"
+// 	"os"
+// 	"strings"
+// 	"time"
 
-	"reservation/internal/driver"
-	"reservation/internal/helpers"
-	"reservation/internal/pkg/config"
-	"reservation/internal/pkg/handlers"
-	"reservation/internal/pkg/models"
-	"reservation/internal/pkg/render"
-	"reservation/internal/platform"
-	"reservation/internal/routes"
+// 	"reservation/internal/driver"
+// 	"reservation/internal/pkg/config"
+// 	"reservation/internal/pkg/handlers"
+// 	"reservation/internal/pkg/models"
+// 	"reservation/internal/pkg/render"
+// 	"reservation/internal/platform"
+// 	"reservation/internal/routes"
 
-	"github.com/alexedwards/scs/v2"
-	"github.com/go-redis/redis/v8"
-	mail "github.com/xhit/go-simple-mail"
-)
+// 	"github.com/alexedwards/scs/v2"
+// 	"github.com/go-redis/redis/v8"
+// 	mail "github.com/xhit/go-simple-mail"
+// )
 
-const PortNumber = ":8080"
+// const PortNumber = ":8080"
 
-var app config.AppConfig
-var session *scs.SessionManager
+// var app config.AppConfig
+// var session *scs.SessionManager
 
-func Initiate() {
-	//gob.Register(models.Reservation{})
-	app.IsProduction = false
-	session = scs.New()
-	session.Lifetime = 24 * time.Hour
-	session.Cookie.Persist = true
-	session.Cookie.SameSite = http.SameSiteLaxMode
-	session.Cookie.Secure = app.IsProduction
-	app.Session = session
-	//connecting database
-	db, err := driver.ConnectSql("host=localhost port=5432 dbname=reservation user=postgres password=sm211612")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.SQL.Close()
-	//
-	ListenToEmailChan()
-	fmt.Println("created message channel")
-	app.EmailChan = make(chan models.EmailData)
-	fmt.Println("stopped here")
-	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
-	time.Sleep(1 * time.Second)
-	//create template cache
-	tc, err := render.CreateTemplateCash()
-	if err != nil {
-		log.Fatal("can not template cashe")
-	}
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	app.InfoLog = infoLog
-	errLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-	app.ErrorLog = errLog
-	app.UseCashe = false
-	app.TemplateCashe = tc
-	render.NewApp(&app)
+// func Initiate() {
+// 	//gob.Register(models.Reservation{})
+// 	app.IsProduction = false
+// 	session = scs.New()
+// 	session.Lifetime = 24 * time.Hour
+// 	session.Cookie.Persist = true
+// 	session.Cookie.SameSite = http.SameSiteLaxMode
+// 	session.Cookie.Secure = app.IsProduction
+// 	app.Session = session
+// 	//connecting database
+// 	db, err := driver.ConnectSql("host=localhost port=5432 dbname=reservation user=postgres password=sm211612")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer db.SQL.Close()
+// 	//
+// 	ListenToEmailChan()
+// 	fmt.Println("created message channel")
+// 	app.EmailChan = make(chan models.EmailData)
+// 	fmt.Println("stopped here")
+// 	client := redis.NewClient(&redis.Options{
+// 		Addr: "localhost:6379",
+// 	})
+// 	time.Sleep(1 * time.Second)
+// 	//create template cache
+// 	tc, err := render.CreateTemplateCash()
+// 	if err != nil {
+// 		log.Fatal("can not template cashe")
+// 	}
+// 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+// 	app.InfoLog = infoLog
+// 	errLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+// 	app.ErrorLog = errLog
+// 	app.UseCashe = false
+// 	app.TemplateCashe = tc
+// 	render.NewApp(&app)
 
-	ra := platform.NewRedisAdapter(client)
-	repo := handlers.NewRepository(&app, db, ra)
-	helpers.NewHelpers(&app)
-	mux := routes.Routes(repo)
-	fmt.Println("server starting at port 8080")
-	log.Fatal(http.ListenAndServe(PortNumber, mux))
+// 	ra := platform.NewRedisAdapter(client)
+// 	repo := handlers.NewRepository(&app, db, ra)
+// 	helpers.NewHelpers(&app)
+// 	mux := routes.Routes(repo)
+// 	fmt.Println("server starting at port 8080")
+// 	log.Fatal(http.ListenAndServe(PortNumber, mux))
 
-}
-func SendEmail(msg models.EmailData) {
-	server := mail.NewSMTPClient()
-	server.Host = "localhost"
-	server.Port = 1025
-	server.KeepAlive = false
-	server.ConnectTimeout = 5 * time.Second
-	server.SendTimeout = 5 * time.Second
-	client, err := server.Connect()
-	if err != nil {
-		app.ErrorLog.Println(err)
-	}
-	email := mail.NewMSG()
-	email.SetFrom(msg.From).AddTo(msg.To).SetSubject(msg.Subject)
-	basic, err := ioutil.ReadFile(fmt.Sprintf("./email-template/%s", msg.Template))
-	//fmt.Println(string(basic))
-	if err != nil {
-		app.ErrorLog.Println(err)
-	}
-	if string(basic) == "" {
-		email.SetBody(mail.TextPlain, msg.Content)
-	} else {
-		bodyToSend := string(basic)
-		bodyString := strings.Replace(bodyToSend, "[%BODY%]", msg.Content, 1)
-		email.SetBody(mail.TextHTML, bodyString)
-	}
-	err = email.Send(client)
-	if err != nil {
-		app.ErrorLog.Println(err)
-	}
-}
-func ListenToEmailChan() {
-	go func() {
-		msg := <-app.EmailChan
-		SendEmail(msg)
-	}()
-}
+// }
+// func SendEmail(msg models.EmailData) {
+// 	server := mail.NewSMTPClient()
+// 	server.Host = "localhost"
+// 	server.Port = 1025
+// 	server.KeepAlive = false
+// 	server.ConnectTimeout = 5 * time.Second
+// 	server.SendTimeout = 5 * time.Second
+// 	client, err := server.Connect()
+// 	if err != nil {
+// 		app.ErrorLog.Println(err)
+// 	}
+// 	email := mail.NewMSG()
+// 	email.SetFrom(msg.From).AddTo(msg.To).SetSubject(msg.Subject)
+// 	basic, err := ioutil.ReadFile(fmt.Sprintf("./email-template/%s", msg.Template))
+// 	//fmt.Println(string(basic))
+// 	if err != nil {
+// 		app.ErrorLog.Println(err)
+// 	}
+// 	if string(basic) == "" {
+// 		email.SetBody(mail.TextPlain, msg.Content)
+// 	} else {
+// 		bodyToSend := string(basic)
+// 		bodyString := strings.Replace(bodyToSend, "[%BODY%]", msg.Content, 1)
+// 		email.SetBody(mail.TextHTML, bodyString)
+// 	}
+// 	err = email.Send(client)
+// 	if err != nil {
+// 		app.ErrorLog.Println(err)
+// 	}
+// }
+// func ListenToEmailChan() {
+// 	go func() {
+// 		msg := <-app.EmailChan
+// 		SendEmail(msg)
+// 	}()
+// }
