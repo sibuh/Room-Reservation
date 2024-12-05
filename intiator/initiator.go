@@ -27,7 +27,8 @@ package intiator
 // var app config.AppConfig
 // var session *scs.SessionManager
 
-// func Initiate() {
+func Initiate() {}
+
 // 	//gob.Register(models.Reservation{})
 // 	app.IsProduction = false
 // 	session = scs.New()

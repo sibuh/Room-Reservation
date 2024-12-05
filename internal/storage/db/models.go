@@ -30,11 +30,12 @@ type Room struct {
 }
 
 type User struct {
-	ID        uuid.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          uuid.UUID
+	FirstName   string
+	LastName    string
+	PhoneNumber string
+	Email       string
+	Password    string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
