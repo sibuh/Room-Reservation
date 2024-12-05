@@ -10,11 +10,9 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgconn v1.14.0
-	github.com/jackc/pgtype v0.0.0-20190828014616-a8802b16cc59
 	github.com/jackc/pgx/v4 v4.0.0-pre1.0.20190824185557-6972a5742186
 	github.com/jackc/pgx/v5 v5.4.1
 	github.com/justinas/nosurf v1.1.1
-	github.com/xhit/go-simple-mail v2.2.2+incompatible
 	golang.org/x/crypto v0.10.0
 )
 
@@ -27,6 +25,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgtype v0.0.0-20190828014616-a8802b16cc59 // indirect
 	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )

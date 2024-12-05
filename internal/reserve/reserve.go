@@ -1,47 +1,31 @@
 package reserve
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
+	"net/http"
 	"reservation/internal/storage/db"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-type ReserveRequest struct {
-	HotelID uuid.UUID `json:"hotel_id"`
-	RoomID  uuid.UUID `json:"room_id"`
-	UserID  uuid.UUID `json:"user_id"`
-}
-type ReserveResponse struct {
-	ID         uuid.UUID
-	RoomNumber string
-	UserID     uuid.UUID
-	HotelID    uuid.UUID
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-}
-type Session struct {
-	SessionID  uuid.UUID `json:"session_id"`
-	PaymentURL string    `json:"payment_url"`
-	CancelURL  string    `json:"cancel_url"`
-}
-
-var ErrReservationFailed = errors.New("failed to reserve room")
-
 type reserve struct {
-	Querier
+	db.Querier
+	url string
 }
 
-func Init(q Querier) Querier {
+func Init(q db.Querier) reserve {
 	return reserve{
 		Querier: q,
 	}
 }
 
-func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (ReserveResponse, error) {
-	reservedRoom, err := r.Querier.HoldRoom(ctx, db.HoldRoomParams{
+func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (CheckoutResponse, error) {
+	if err := param.Validate(); err != nil {
+		return CheckoutResponse{}, ErrInvalidInput
+	}
+	_, err := r.Querier.HoldRoom(ctx, db.HoldRoomParams{
 		UserID: uuid.NullUUID{
 			UUID:  param.UserID,
 			Valid: true,
@@ -51,15 +35,40 @@ func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (Reserv
 		ID: param.RoomID,
 	})
 	if err != nil {
-		return ReserveResponse{}, ErrReservationFailed
+		return CheckoutResponse{}, ErrReservationFailed
 	}
-	return ReserveResponse{
-		ID:         reservedRoom.ID,
-		RoomNumber: reservedRoom.RoomNumber,
-		UserID:     reservedRoom.UserID.UUID,
-		HotelID:    reservedRoom.HotelID,
-		CreatedAt:  reservedRoom.CreatedAt,
-		UpdatedAt:  reservedRoom.UpdatedAt,
-	}, nil
+	req := CheckoutRequest{
+		ProductID:   param.RoomID.String(),
+		CallbackURL: "http://localhost:9090/callback", //TODO: url should be read from config
+	}
+	ssn, err := r.createCheckoutSession(ctx, req)
+	if err != nil {
+		return CheckoutResponse{}, ErrCheckoutSessionFailed
+	}
+	return ssn, nil
 
+}
+func (r *reserve) createCheckoutSession(ctx context.Context, req CheckoutRequest) (CheckoutResponse, error) {
+	bbyte, err := json.Marshal(req)
+	if err != nil {
+		return CheckoutResponse{}, err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, r.url, bytes.NewBuffer(bbyte))
+	if err != nil {
+		return CheckoutResponse{}, err
+	}
+	client := http.Client{}
+	res, err := client.Do(request)
+	if err != nil {
+		return CheckoutResponse{}, err
+	}
+	var session CheckoutResponse
+	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
+		return CheckoutResponse{}, err
+	}
+	return session, nil
+}
+func (r *reserve) UpdatedRoomStatus(ctx context.Context, cbr CallBackRequest) (interface{}, error) {
+	return nil, nil
 }
