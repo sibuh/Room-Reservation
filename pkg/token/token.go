@@ -3,17 +3,18 @@ package token
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Jwt interface {
-	CreateToken(paylad Payload) (string, error)
-	VerifyToken(token string) *Payload
-}
+var ErrExpiredToken = errors.New("token is expired login to get fresh token")
+var ErrTokenCreationFailure = errors.New("failed to create token")
+var ErrUnexpecteSigningMethod = errors.New("unexpected signing method")
+
 type Payload struct {
-	UserName  string
+	ID        string
 	CreatedAt time.Time
 	Duration  time.Duration
 }
@@ -22,37 +23,32 @@ func (p *Payload) Valid() error {
 	if time.Now().Before(p.CreatedAt.Add(p.Duration)) {
 		return nil
 	}
-	return errors.New("token is expired")
+	return ErrExpiredToken
 }
 
-type jwtMaker struct {
-	SymmetricKey string
-}
-
-func NewJwtMaker(key string) Jwt {
-	return &jwtMaker{
-		SymmetricKey: key,
-	}
-}
-func (j *jwtMaker) CreateToken(payload Payload) (string, error) {
+func CreateToken(payload Payload, key string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &payload)
 
-	tokenString, err := token.SignedString([]byte(j.SymmetricKey))
+	tokenString, err := token.SignedString([]byte(key))
 	if err != nil {
-		return "", err
+		log.Println("failed to create token", err)
+		return "", ErrTokenCreationFailure
 	}
 	return tokenString, nil
 }
-func (j *jwtMaker) VerifyToken(tokenString string) *Payload {
+func VerifyToken(tokenString string) *Payload {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("unexpected signing Method %s", token.Header["alg"])
+			log.Println("failed to verify token",
+				fmt.Errorf("unexpected signing Method %s", token.Header["alg"]))
+			return nil, ErrUnexpecteSigningMethod
 		}
 		return nil, nil
 	}
 	token, err := jwt.ParseWithClaims(tokenString, &Payload{}, keyFunc)
 	if err != nil {
+		log.Println("parsing payload failed")
 		return &Payload{}
 	}
 	return token.Claims.(*Payload)

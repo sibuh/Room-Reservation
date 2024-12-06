@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetUser(ctx context.Context, email string) (User, error)
 	HoldRoom(ctx context.Context, arg HoldRoomParams) (Room, error)
 }
 

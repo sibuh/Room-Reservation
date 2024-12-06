@@ -36,6 +36,7 @@ type User struct {
 	PhoneNumber string
 	Email       string
 	Password    string
+	Username    string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

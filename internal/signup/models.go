@@ -24,6 +24,7 @@ type SignupRequest struct {
 	PhoneNumber string `json:"phone_number"`
 	Email       string `json:"email"`
 	Password    string `json:"password"`
+	Username    string `json:"username"`
 }
 
 func (sr SignupRequest) Validate() error {
@@ -39,4 +40,11 @@ func (sr SignupRequest) Validate() error {
 type LoginRequest struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
+}
+
+func (lr LoginRequest) Validate() error {
+	return validation.ValidateStruct(&lr,
+		validation.Field(&lr.Password, validation.Required.Error("password is requred")),
+		validation.Field(&lr.Email, validation.Required.Error("email is required")),
+	)
 }

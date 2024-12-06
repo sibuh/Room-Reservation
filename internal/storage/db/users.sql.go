@@ -11,8 +11,8 @@ import (
 
 const createUser = `-- name: CreateUser :one
 insert into users 
-(first_name,last_name,phone_number,email,password)
-values($1,$2,$3,$4,$5) returning id, first_name, last_name, phone_number, email, password, created_at, updated_at
+(first_name,last_name,phone_number,email,password,username)
+values($1,$2,$3,$4,$5,$6) returning id, first_name, last_name, phone_number, email, password, username, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -21,6 +21,7 @@ type CreateUserParams struct {
 	PhoneNumber string
 	Email       string
 	Password    string
+	Username    string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.PhoneNumber,
 		arg.Email,
 		arg.Password,
+		arg.Username,
 	)
 	var i User
 	err := row.Scan(
@@ -39,6 +41,29 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PhoneNumber,
 		&i.Email,
 		&i.Password,
+		&i.Username,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUser = `-- name: GetUser :one
+select id, first_name, last_name, phone_number, email, password, username, created_at, updated_at from users
+where email=$1
+`
+
+func (q *Queries) GetUser(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.PhoneNumber,
+		&i.Email,
+		&i.Password,
+		&i.Username,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
