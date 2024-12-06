@@ -1,7 +1,6 @@
 package models
 
 import (
-	"reservation/internal/forms"
 	"time"
 )
 
@@ -14,7 +13,6 @@ type TemplateData struct {
 	Flash     string
 	Error     string
 	Warning   string
-	Form      *forms.Form
 }
 type User struct {
 	ID           int

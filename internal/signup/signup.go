@@ -31,12 +31,12 @@ func Init(logger slog.Logger, db db.Querier, key string) Accesser {
 
 func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) {
 	if err := sup.Validate(); err != nil {
-		s.logger.Info(ctx, "invalid input for signup", err.Error())
+		s.logger.Info("invalid input for signup", err.Error())
 		return "", err
 	}
 	hash, err := pass.HashPassword(sup.Password)
 	if err != nil {
-		s.logger.Error(ctx, "failed to hash password", err)
+		s.logger.Error("failed to hash password", err)
 		return "", ErrPasswordHash
 	}
 	sup.Password = hash
@@ -49,7 +49,7 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 		Email:       sup.Email,
 	})
 	if err != nil {
-		s.logger.Error(ctx, "failed to create user", err)
+		s.logger.Error("failed to create user", err)
 		return "", ErrCreateUser
 	}
 	// create token
@@ -59,7 +59,7 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 		Duration:  5 * time.Minute, //this should come from config
 	}, s.key)
 	if err != nil {
-		s.logger.Error(ctx, "failed to create token", err)
+		s.logger.Error("failed to create token", err)
 		return "", err
 	}
 	return t, nil
@@ -68,7 +68,7 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 
 func (s *access) Login(ctx context.Context, lin LoginRequest) (string, error) {
 	if err := lin.Validate(); err != nil {
-		s.logger.Info(ctx, "invalid input for login", err)
+		s.logger.Info("invalid input for login", err)
 		return "", err
 	}
 

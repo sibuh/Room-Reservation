@@ -14,6 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.1
 	github.com/justinas/nosurf v1.1.1
 	golang.org/x/crypto v0.10.0
+	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 )
 
 require (
