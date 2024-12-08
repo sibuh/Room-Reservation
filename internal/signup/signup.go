@@ -18,14 +18,16 @@ type Accesser interface {
 type access struct {
 	logger slog.Logger
 	db.Querier
-	key string
+	key      string
+	Duration time.Duration
 }
 
-func Init(logger slog.Logger, db db.Querier, key string) Accesser {
+func Init(logger slog.Logger, db db.Querier, key string, dur time.Duration) Accesser {
 	return &access{
-		logger:  logger,
-		Querier: db,
-		key:     key,
+		logger:   logger,
+		Querier:  db,
+		key:      key,
+		Duration: dur,
 	}
 }
 
@@ -56,7 +58,7 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 	t, err := token.CreateToken(token.Payload{
 		ID:        usr.ID.String(),
 		CreatedAt: time.Now(),
-		Duration:  5 * time.Minute, //this should come from config
+		Duration:  s.Duration,
 	}, s.key)
 	if err != nil {
 		s.logger.Error("failed to create token", err)
@@ -83,7 +85,7 @@ func (s *access) Login(ctx context.Context, lin LoginRequest) (string, error) {
 	tkn, err := token.CreateToken(token.Payload{
 		ID:        user.ID.String(),
 		CreatedAt: time.Now(),
-		Duration:  5 * time.Minute,
+		Duration:  s.Duration,
 	}, s.key)
 	if err != nil {
 		return "", err
