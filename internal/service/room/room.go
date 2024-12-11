@@ -8,24 +8,32 @@ import (
 	"reservation/internal/storage/db"
 
 	"github.com/google/uuid"
+	"golang.org/x/exp/slog"
 )
 
-type reserve struct {
+type Reserver interface {
+	ReserveRoom(ctx context.Context, param ReserveRoom) (string, error)
+	UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error)
+}
+
+type room struct {
 	db.Querier
-	url string
+	url    string
+	logger slog.Logger
 }
 
-func Init(q db.Querier) reserve {
-	return reserve{
+func Init(q db.Querier, url string) Reserver {
+	return &room{
 		Querier: q,
+		url:     url,
 	}
 }
 
-func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (CheckoutResponse, error) {
+func (r *room) ReserveRoom(ctx context.Context, param ReserveRoom) (string, error) {
 	if err := param.Validate(); err != nil {
-		return CheckoutResponse{}, ErrInvalidInput
+		return "", ErrInvalidInput
 	}
-	_, err := r.Querier.HoldRoom(ctx, db.HoldRoomParams{
+	_, err := r.Querier.UpdateRoom(ctx, db.UpdateRoomParams{
 		UserID: uuid.NullUUID{
 			UUID:  param.UserID,
 			Valid: true,
@@ -34,7 +42,7 @@ func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (Checko
 		ID: param.RoomID,
 	})
 	if err != nil {
-		return CheckoutResponse{}, ErrReservationFailed
+		return "", ErrReservationFailed
 	}
 	req := CheckoutRequest{
 		ProductID:   param.RoomID.String(),
@@ -42,12 +50,12 @@ func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (Checko
 	}
 	ssn, err := r.createCheckoutSession(ctx, req)
 	if err != nil {
-		return CheckoutResponse{}, ErrCheckoutSessionFailed
+		return "", ErrCheckoutSessionFailed
 	}
-	return ssn, nil
+	return ssn.PaymentURL, nil
 
 }
-func (r *reserve) createCheckoutSession(ctx context.Context, req CheckoutRequest) (CheckoutResponse, error) {
+func (r *room) createCheckoutSession(ctx context.Context, req CheckoutRequest) (CheckoutResponse, error) {
 	bbyte, err := json.Marshal(req)
 	if err != nil {
 		return CheckoutResponse{}, err
@@ -68,6 +76,25 @@ func (r *reserve) createCheckoutSession(ctx context.Context, req CheckoutRequest
 	}
 	return session, nil
 }
-func (r *reserve) UpdateRoomStatus(ctx context.Context, cbr CallBackRequest) (interface{}, error) {
-	return nil, nil
+func (r *room) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error) {
+	rm, err := r.Querier.UpdateRoom(ctx, db.UpdateRoomParams{
+		Status: db.RoomStatus(param.Status),
+		UserID: uuid.NullUUID{
+			UUID:  param.UserID,
+			Valid: true,
+		},
+		ID: param.ID,
+	})
+	if err != nil {
+		r.logger.Error("failed to update room", err)
+		return Room{}, err
+	}
+	return Room{
+		ID:         rm.ID,
+		RoomNumber: rm.RoomNumber,
+		UserID:     rm.UserID.UUID,
+		HotelID:    rm.HotelID,
+		CreatedAt:  rm.CreatedAt,
+		UpdatedAt:  rm.UpdatedAt,
+	}, nil
 }

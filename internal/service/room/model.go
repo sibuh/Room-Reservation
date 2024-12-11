@@ -7,11 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type ReserveRequest struct {
-	RoomID uuid.UUID `json:"room_id"`
-	UserID uuid.UUID `json:"user_id"`
-}
-type ReserveResponse struct {
+type RoomStatus string
+
+const (
+	Free     RoomStatus = "FREE"
+	Reserved RoomStatus = "RESERVED"
+	Held     RoomStatus = "HELD"
+)
+
+type Room struct {
 	ID         uuid.UUID
 	RoomNumber string
 	UserID     uuid.UUID
@@ -19,13 +23,23 @@ type ReserveResponse struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
+
+type ReserveRoom struct {
+	RoomID uuid.UUID `json:"room_id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+type UpdateRoom struct {
+	ID     uuid.UUID
+	Status RoomStatus
+	UserID uuid.UUID
+}
 type CheckoutResponse struct {
 	SessionID  uuid.UUID `json:"session_id"`
 	PaymentURL string    `json:"payment_url"`
 	CancelURL  string    `json:"cancel_url"`
 }
 
-func (rr ReserveRequest) Validate() error {
+func (rr ReserveRoom) Validate() error {
 	return validation.ValidateStruct(
 		&rr,
 		validation.Field(&rr.RoomID, validation.Required.Error("room id is required")),
