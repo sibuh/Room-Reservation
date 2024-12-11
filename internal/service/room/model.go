@@ -1,4 +1,4 @@
-package reserve
+package room
 
 import (
 	"time"

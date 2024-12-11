@@ -1,4 +1,4 @@
-package signup
+package user
 
 import (
 	"time"
