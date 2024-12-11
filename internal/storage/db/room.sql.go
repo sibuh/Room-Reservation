@@ -13,24 +13,24 @@ import (
 
 const holdRoom = `-- name: HoldRoom :one
 update rooms set status ='HELD',user_id =$1 
-where id= $2 and hotel_id =$3 
-returning id, room_number, user_id, hotel_id, created_at, updated_at
+where id= $2  
+returning id, room_number, user_id, hotel_id, status, created_at, updated_at
 `
 
 type HoldRoomParams struct {
-	UserID  uuid.NullUUID
-	ID      uuid.UUID
-	HotelID uuid.UUID
+	UserID uuid.NullUUID
+	ID     uuid.UUID
 }
 
 func (q *Queries) HoldRoom(ctx context.Context, arg HoldRoomParams) (Room, error) {
-	row := q.db.QueryRow(ctx, holdRoom, arg.UserID, arg.ID, arg.HotelID)
+	row := q.db.QueryRow(ctx, holdRoom, arg.UserID, arg.ID)
 	var i Room
 	err := row.Scan(
 		&i.ID,
 		&i.RoomNumber,
 		&i.UserID,
 		&i.HotelID,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

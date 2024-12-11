@@ -30,7 +30,6 @@ func (r *reserve) ReserveRoom(ctx context.Context, param ReserveRequest) (Checko
 			UUID:  param.UserID,
 			Valid: true,
 		},
-		HotelID: param.HotelID,
 
 		ID: param.RoomID,
 	})
@@ -69,6 +68,6 @@ func (r *reserve) createCheckoutSession(ctx context.Context, req CheckoutRequest
 	}
 	return session, nil
 }
-func (r *reserve) UpdatedRoomStatus(ctx context.Context, cbr CallBackRequest) (interface{}, error) {
+func (r *reserve) UpdateRoomStatus(ctx context.Context, cbr CallBackRequest) (interface{}, error) {
 	return nil, nil
 }

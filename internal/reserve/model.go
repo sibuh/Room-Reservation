@@ -8,9 +8,8 @@ import (
 )
 
 type ReserveRequest struct {
-	HotelID uuid.UUID `json:"hotel_id"`
-	RoomID  uuid.UUID `json:"room_id"`
-	UserID  uuid.UUID `json:"user_id"`
+	RoomID uuid.UUID `json:"room_id"`
+	UserID uuid.UUID `json:"user_id"`
 }
 type ReserveResponse struct {
 	ID         uuid.UUID
@@ -29,7 +28,6 @@ type CheckoutResponse struct {
 func (rr ReserveRequest) Validate() error {
 	return validation.ValidateStruct(
 		&rr,
-		validation.Field(rr.HotelID, validation.Required.Error("hotel id is required")),
 		validation.Field(&rr.RoomID, validation.Required.Error("room id is required")),
 		validation.Field(&rr.UserID, validation.Required.Error("user id is required")),
 	)

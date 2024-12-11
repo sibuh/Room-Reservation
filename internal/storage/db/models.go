@@ -6,16 +6,62 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+type RoomStatus string
+
+const (
+	RoomStatusFREE     RoomStatus = "FREE"
+	RoomStatusHELD     RoomStatus = "HELD"
+	RoomStatusRESERVED RoomStatus = "RESERVED"
+)
+
+func (e *RoomStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RoomStatus(s)
+	case string:
+		*e = RoomStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RoomStatus: %T", src)
+	}
+	return nil
+}
+
+type NullRoomStatus struct {
+	RoomStatus RoomStatus
+	Valid      bool // Valid is true if RoomStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRoomStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.RoomStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RoomStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRoomStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RoomStatus), nil
+}
+
 type Hotel struct {
 	ID        uuid.UUID
 	Name      string
-	Star      sql.NullInt32
+	Rating    sql.NullFloat64
 	Location  []float64
+	ImageUrl  sql.NullString
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -25,6 +71,7 @@ type Room struct {
 	RoomNumber string
 	UserID     uuid.NullUUID
 	HotelID    uuid.UUID
+	Status     RoomStatus
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
