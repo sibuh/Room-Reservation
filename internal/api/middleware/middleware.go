@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"reservation/internal/storage/db"
 	"reservation/pkg/token"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const Bearer = "Bearer"
@@ -26,6 +29,11 @@ func Authorize() gin.HandlerFunc {
 			c.AbortWithError(http.StatusUnauthorized, errors.New("token is not of type bearer"))
 		}
 		payload := token.VerifyToken(slicedToken[1])
+		user, err := db.Querier.GetUserByID(context.Background(), uuid.MustParse(payload.ID))
+		if err != nil {
+			c.AbortWithError(http.StatusUnauthorized, errors.New("user does not exist"))
+		}
+		c.Set("user_id", user.ID)
 
 	}
 }
