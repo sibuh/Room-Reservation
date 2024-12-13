@@ -48,7 +48,7 @@ func (rr ReserveRoom) Validate() error {
 }
 
 type CheckoutRequest struct {
-	ProductID   string
+	ProductID   string `json:"product_id"`
 	CallbackURL string `json:"callback_url"`
 }
 
