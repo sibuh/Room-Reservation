@@ -15,10 +15,6 @@ import (
 
 const Bearer = "Bearer"
 
-var (
-	ErrAuthorizedAccess = errors.New("")
-)
-
 type Middleware interface {
 	Authorize() gin.HandlerFunc
 }

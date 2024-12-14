@@ -8,6 +8,7 @@ import (
 	"reservation/pkg/token"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/exp/slog"
 )
 
@@ -31,18 +32,18 @@ func Init(logger slog.Logger, db db.Querier, key string, dur time.Duration) Acce
 	}
 }
 
-func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) {
+func (a *access) Signup(ctx context.Context, sup SignupRequest) (string, error) {
 	if err := sup.Validate(); err != nil {
-		s.logger.Info("invalid input for signup", err.Error())
+		a.logger.Info("invalid input for signup", err.Error())
 		return "", err
 	}
 	hash, err := pass.HashPassword(sup.Password)
 	if err != nil {
-		s.logger.Error("failed to hash password", err)
+		a.logger.Error("failed to hash password", err)
 		return "", ErrPasswordHash
 	}
 	sup.Password = hash
-	usr, err := s.CreateUser(ctx, db.CreateUserParams{
+	usr, err := a.CreateUser(ctx, db.CreateUserParams{
 		FirstName:   sup.FirstName,
 		LastName:    sup.LastName,
 		Password:    sup.Password,
@@ -51,42 +52,53 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 		Email:       sup.Email,
 	})
 	if err != nil {
-		s.logger.Error("failed to create user", err)
+		a.logger.Error("failed to create user", err)
 		return "", ErrCreateUser
 	}
 	// create token
 	t, err := token.CreateToken(token.Payload{
 		ID:        usr.ID.String(),
 		CreatedAt: time.Now(),
-		Duration:  s.Duration,
-	}, s.key, s.logger)
+		Duration:  a.Duration,
+	}, a.key, a.logger)
 	if err != nil {
-		s.logger.Error("failed to create token", err)
+		a.logger.Error("failed to create token", err)
 		return "", err
 	}
 	return t, nil
 
 }
 
-func (s *access) Login(ctx context.Context, lin LoginRequest) (string, error) {
+func (a *access) Login(ctx context.Context, lin LoginRequest) (string, error) {
 	if err := lin.Validate(); err != nil {
-		s.logger.Info("invalid input for login", err)
+		a.logger.Info("invalid input for login", err)
 		return "", err
 	}
 
-	user, err := s.Querier.GetUser(ctx, lin.Email)
+	user, err := a.Querier.GetUser(ctx, lin.Email)
 	if err != nil {
 		return "", err
 
 	}
 	if !pass.CheckPasswordHash(lin.Password, user.Password) {
-		return "", errors.New("password incorrect")
+		return "", errors.New("incorrect password ")
 	}
 	tkn, err := token.CreateToken(token.Payload{
 		ID:        user.ID.String(),
 		CreatedAt: time.Now(),
-		Duration:  s.Duration,
-	}, s.key, s.logger)
+		Duration:  a.Duration,
+	}, a.key, a.logger)
+	if err != nil {
+		return "", err
+	}
+	return tkn, nil
+}
+func (a *access) RefreshToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	tkn, err := token.CreateToken(token.Payload{
+		ID:        userID.String(),
+		CreatedAt: time.Now(),
+		Duration:  a.Duration,
+	}, a.key, a.logger)
 	if err != nil {
 		return "", err
 	}
