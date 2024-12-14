@@ -59,7 +59,7 @@ func (s *access) Signup(ctx context.Context, sup SignupRequest) (string, error) 
 		ID:        usr.ID.String(),
 		CreatedAt: time.Now(),
 		Duration:  s.Duration,
-	}, s.key)
+	}, s.key, s.logger)
 	if err != nil {
 		s.logger.Error("failed to create token", err)
 		return "", err
@@ -86,7 +86,7 @@ func (s *access) Login(ctx context.Context, lin LoginRequest) (string, error) {
 		ID:        user.ID.String(),
 		CreatedAt: time.Now(),
 		Duration:  s.Duration,
-	}, s.key)
+	}, s.key, s.logger)
 	if err != nil {
 		return "", err
 	}

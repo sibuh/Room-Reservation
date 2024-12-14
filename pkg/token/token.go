@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/exp/slog"
 )
 
 var ErrExpiredToken = errors.New("token is expired login to get fresh token")
@@ -26,7 +27,7 @@ func (p *Payload) Valid() error {
 	return ErrExpiredToken
 }
 
-func CreateToken(payload Payload, key string) (string, error) {
+func CreateToken(payload Payload, key string, logger slog.Logger) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &payload)
 
 	tokenString, err := token.SignedString([]byte(key))
@@ -36,7 +37,7 @@ func CreateToken(payload Payload, key string) (string, error) {
 	}
 	return tokenString, nil
 }
-func VerifyToken(tokenString string) *Payload {
+func VerifyToken(tokenString string, logger slog.Logger) (*Payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -49,7 +50,7 @@ func VerifyToken(tokenString string) *Payload {
 	token, err := jwt.ParseWithClaims(tokenString, &Payload{}, keyFunc)
 	if err != nil {
 		log.Println("parsing payload failed")
-		return &Payload{}
+		return &Payload{}, err
 	}
-	return token.Claims.(*Payload)
+	return token.Claims.(*Payload), nil
 }

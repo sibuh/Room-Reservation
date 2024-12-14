@@ -39,16 +39,19 @@ func (a *middleware) Authorize() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tkn := c.Request.Header.Get("Authorization")
 		if tkn == "" {
-			c.AbortWithError(http.StatusUnauthorized, errors.New("no token not provided"))
+			a.logger.InfoContext(context.Background(), "no authorization token in request", tkn)
+			c.AbortWithError(http.StatusUnauthorized, errors.New("unable to access"))
 		}
 		slicedToken := strings.Split(tkn, " ")
 		if slicedToken[0] != Bearer {
+			a.logger.InfoContext(context.Background(), "token is not of bearer type", slicedToken[0])
 			c.AbortWithError(http.StatusUnauthorized, errors.New("token is not of type bearer"))
 		}
-		payload := token.VerifyToken(slicedToken[1])
+		payload, err := token.VerifyToken(slicedToken[1], a.logger)
 		user, err := a.Querier.GetUserByID(context.Background(), uuid.MustParse(payload.ID))
 		if err != nil {
-			c.AbortWithError(http.StatusUnauthorized, errors.New("user does not exist"))
+			a.logger.InfoContext(context.Background(), "user does not exist")
+			c.AbortWithError(http.StatusUnauthorized, errors.New("user not found"))
 		}
 		c.Set("user_id", user.ID)
 
