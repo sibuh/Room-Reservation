@@ -37,7 +37,7 @@ func CreateToken(payload Payload, key string, logger slog.Logger) (string, error
 	}
 	return tokenString, nil
 }
-func VerifyToken(tokenString string, logger slog.Logger) (*Payload, error) {
+func VerifyToken(tokenString string, logger *slog.Logger) (*Payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {

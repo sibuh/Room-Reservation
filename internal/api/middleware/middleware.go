@@ -20,11 +20,11 @@ type Middleware interface {
 }
 
 type middleware struct {
-	logger slog.Logger
+	logger *slog.Logger
 	db.Querier
 }
 
-func InitMiddleware(logger slog.Logger, q db.Querier) Middleware {
+func InitMiddleware(logger *slog.Logger, q db.Querier) Middleware {
 	return &middleware{
 		logger:  logger,
 		Querier: q,

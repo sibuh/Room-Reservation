@@ -1,7 +1,7 @@
 package main
 
-import "reservation/intiator"
+import "reservation/initiator"
 
 func main() {
-	intiator.Initiate()
+	initiator.Initiate()
 }

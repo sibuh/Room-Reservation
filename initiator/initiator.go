@@ -1,3 +1,3 @@
-package intiator
+package initiator
 
 func Initiate() {}
