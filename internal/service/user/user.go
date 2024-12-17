@@ -15,6 +15,7 @@ import (
 type Accesser interface {
 	Signup(ctx context.Context, sup SignupRequest) (string, error)
 	Login(ctx context.Context, lin LoginRequest) (string, error)
+	RefreshToken(ctx context.Context, userID uuid.UUID) (string, error)
 }
 type access struct {
 	logger slog.Logger
