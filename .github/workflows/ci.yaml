@@ -10,9 +10,9 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.23.3'
       - name: Install dependencies
-        run: go get .
+        run: go get go.mod
       - name: Build
         run: go build -v ./...
       - name: Test with the Go CLI
