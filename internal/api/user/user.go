@@ -7,6 +7,7 @@ import (
 	usrv "reservation/internal/service/user"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/exp/slog"
 )
 
@@ -46,5 +47,37 @@ func (u *user) Signup(c *gin.Context) {
 	})
 
 }
-func (u *user) Login(c *gin.Context)   {}
-func (u *user) Refresh(c *gin.Context) {}
+func (u *user) Login(c *gin.Context) {
+	var req usrv.LoginRequest
+	if err := c.ShouldBind(&req); err != nil {
+		u.logger.Info("failed to bind login request", err.Error())
+		c.JSON(http.StatusBadRequest, err)
+		return
+
+	}
+	token, err := u.userService.Login(context.Background(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+}
+func (u *user) Refresh(c *gin.Context) {
+	userID, ok := c.Value("user_id").(uuid.UUID)
+	if !ok {
+		u.logger.Info("user id not set on context", errors.New("user not set on context"))
+		c.JSON(http.StatusBadRequest, nil)
+		return
+	}
+	token, err := u.userService.RefreshToken(context.Background(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+
+}
