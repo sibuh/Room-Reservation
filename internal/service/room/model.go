@@ -25,8 +25,10 @@ type Room struct {
 }
 
 type ReserveRoom struct {
-	RoomID uuid.UUID `json:"room_id"`
-	UserID uuid.UUID `json:"user_id"`
+	RoomID   uuid.UUID `json:"room_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	FromTime time.Time `json:"from_time"`
+	ToTime   time.Time `json:"to_time"`
 }
 type UpdateRoom struct {
 	ID     uuid.UUID
@@ -44,6 +46,8 @@ func (rr ReserveRoom) Validate() error {
 		&rr,
 		validation.Field(&rr.RoomID, validation.Required.Error("room id is required")),
 		validation.Field(&rr.UserID, validation.Required.Error("user id is required")),
+		validation.Field(&rr.FromTime, validation.Required.Error("From time is required"),
+			validation.Min(time.Now()).Error("from time can not be past time")),
 	)
 }
 

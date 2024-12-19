@@ -7,8 +7,8 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgconn v1.14.3
-	github.com/jackc/pgx/v4 v4.18.3
+	github.com/jackc/pgconn v1.14.0
+	github.com/jackc/pgx/v4 v4.18.0
 	golang.org/x/crypto v0.27.0
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 )
