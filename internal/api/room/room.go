@@ -3,6 +3,7 @@ package room
 import (
 	"context"
 	"net/http"
+
 	"reservation/internal/service/room"
 
 	"github.com/gin-gonic/gin"
@@ -10,16 +11,18 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type Reserver interface {
+type RoomHandler interface {
 	Reserve(c *gin.Context)
 }
 
-type rm struct {
+type roomHandler struct {
 	logger *slog.Logger
-	srv    room.Reserver
+	srv    room.RoomService
 }
 
-func (r *rm) Reserve(c *gin.Context) {
+func NewRoomHandler(logger *slog.Logger, srv room.RoomService)
+
+func (r *roomHandler) Reserve(c *gin.Context) {
 	req := room.ReserveRoom{}
 	if err := c.ShouldBind(&req); err != nil {
 		r.logger.Info("failed to bind request body", err)
@@ -34,7 +37,7 @@ func (r *rm) Reserve(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, url)
 }
-func (r *rm) UpdateRoom(c *gin.Context) {
+func (r *roomHandler) UpdateRoom(c *gin.Context) {
 	req := room.UpdateRoom{}
 	if err := c.ShouldBind(&req); err != nil {
 		r.logger.Info("failed updated room params", err)

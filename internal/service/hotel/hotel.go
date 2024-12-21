@@ -1,4 +1,4 @@
-package hotels
+package hotel
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type Hotels interface {
+type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
 }
 
@@ -31,12 +31,19 @@ func (r RegisterHotelParam) Validate() error {
 	)
 }
 
-type hotels struct {
+type hotelService struct {
 	db.Querier
-	logger slog.Logger
+	logger *slog.Logger
 }
 
-func (h *hotels) Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error) {
+func NewHotelService(q db.Querier, logger *slog.Logger) HotelService {
+	return &hotelService{
+		Querier: q,
+		logger:  logger,
+	}
+}
+
+func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error) {
 	if err := param.Validate(); err != nil {
 		h.logger.Info("invalid input", err)
 		return db.Hotel{}, err
