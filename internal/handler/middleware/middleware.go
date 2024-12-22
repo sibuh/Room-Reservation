@@ -24,7 +24,7 @@ type middleware struct {
 	db.Querier
 }
 
-func InitMiddleware(logger *slog.Logger, q db.Querier) Middleware {
+func NewMiddleware(logger *slog.Logger, q db.Querier) Middleware {
 	return &middleware{
 		logger:  logger,
 		Querier: q,

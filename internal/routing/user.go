@@ -1,5 +1,0 @@
-package routing
-
-func RegisterRoutes() {
-
-}

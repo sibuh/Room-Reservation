@@ -18,13 +18,13 @@ type UserService interface {
 	RefreshToken(ctx context.Context, userID uuid.UUID) (string, error)
 }
 type userService struct {
-	logger slog.Logger
+	logger *slog.Logger
 	db.Querier
 	key      string
 	Duration time.Duration
 }
 
-func NewUserService(logger slog.Logger, db db.Querier, key string, dur time.Duration) UserService {
+func NewUserService(logger *slog.Logger, db db.Querier, key string, dur time.Duration) UserService {
 	return &userService{
 		logger:   logger,
 		Querier:  db,

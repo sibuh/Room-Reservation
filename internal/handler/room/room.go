@@ -20,7 +20,12 @@ type roomHandler struct {
 	srv    room.RoomService
 }
 
-func NewRoomHandler(logger *slog.Logger, srv room.RoomService)
+func NewRoomHandler(logger *slog.Logger, srv room.RoomService) RoomHandler {
+	return &roomHandler{
+		logger: logger,
+		srv:    srv,
+	}
+}
 
 func (r *roomHandler) Reserve(c *gin.Context) {
 	req := room.ReserveRoom{}

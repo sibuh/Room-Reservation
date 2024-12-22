@@ -27,7 +27,7 @@ func (p *Payload) Valid() error {
 	return ErrExpiredToken
 }
 
-func CreateToken(payload Payload, key string, logger slog.Logger) (string, error) {
+func CreateToken(payload Payload, key string, logger *slog.Logger) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &payload)
 
 	tokenString, err := token.SignedString([]byte(key))
