@@ -2,9 +2,11 @@ package initiator
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"reservation/internal/service/hotel"
 	"reservation/internal/service/room"
@@ -18,7 +20,8 @@ import (
 	"reservation/internal/storage/db"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slog"
@@ -31,18 +34,21 @@ type route struct {
 	middlewares []gin.HandlerFunc
 }
 
-func ReadConfig(path string) {
-	viper.AddConfigPath(path)
-
-}
-
 func Initiate() {
+
 	//initialize viper
 	viper.SetConfigFile("config/config.yaml")
+
 	//create connection to database
-	conn, err := pgx.Connect(context.Background(), viper.GetString("db_conn"))
+	fmt.Println("conn====>", viper.GetString("db_conn"))
+	pool, err := pgxpool.NewWithConfig(context.Background(), CreateDBConfig(viper.GetString("db_conn")))
 	if err != nil {
-		log.Fatal("failed to create connection to db", err)
+		log.Fatal("failed to create connection pool", err)
+	}
+
+	conn, err := pool.Acquire(context.Background())
+	if err != nil {
+		log.Fatal("failed to create connection from pool", err)
 	}
 
 	//create logger
@@ -51,7 +57,9 @@ func Initiate() {
 	// initialize storage layer
 	queries := db.New(conn)
 	//load env
-	godotenv.Load(".env")
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatalf("Error loading .env file: %s", err)
+	}
 	key := os.Getenv("TOKEN_KEY")
 	duration := viper.GetDuration("token_duration")
 
@@ -127,4 +135,41 @@ func RegisterRoutes(g *gin.RouterGroup, routes []route) {
 		route.middlewares = append(route.middlewares, route.handler)
 		g.Handle(route.method, route.path, route.middlewares...)
 	}
+}
+
+func CreateDBConfig(url string) *pgxpool.Config {
+	const defaultMaxConns = int32(4)
+	const defaultMinConns = int32(0)
+	const defaultMaxConnLifetime = time.Hour
+	const defaultMaxConnIdleTime = time.Minute * 30
+	const defaultHealthCheckPeriod = time.Minute
+	const defaultConnectTimeout = time.Second * 5
+
+	dbConfig, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		log.Fatal("Failed to create a config, error: ", err)
+	}
+
+	dbConfig.MaxConns = defaultMaxConns
+	dbConfig.MinConns = defaultMinConns
+	dbConfig.MaxConnLifetime = defaultMaxConnLifetime
+	dbConfig.MaxConnIdleTime = defaultMaxConnIdleTime
+	dbConfig.HealthCheckPeriod = defaultHealthCheckPeriod
+	dbConfig.ConnConfig.ConnectTimeout = defaultConnectTimeout
+
+	dbConfig.BeforeAcquire = func(ctx context.Context, c *pgx.Conn) bool {
+		log.Println("acquiring the connection pool to the database!!")
+		return true
+	}
+
+	dbConfig.AfterRelease = func(c *pgx.Conn) bool {
+		log.Println("connection released!!")
+		return true
+	}
+
+	dbConfig.BeforeClose = func(c *pgx.Conn) {
+		log.Println("Closed the connection pool to the database!!")
+	}
+
+	return dbConfig
 }

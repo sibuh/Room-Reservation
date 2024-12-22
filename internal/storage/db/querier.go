@@ -7,14 +7,14 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUser(ctx context.Context, email string) (User, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error)
 }
 

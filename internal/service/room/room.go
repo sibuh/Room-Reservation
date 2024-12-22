@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"reservation/internal/storage/db"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
 
@@ -34,12 +34,15 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (stri
 		return "", ErrInvalidInput
 	}
 	_, err := rs.Querier.UpdateRoom(ctx, db.UpdateRoomParams{
-		UserID: uuid.NullUUID{
-			UUID:  param.UserID,
+		UserID: pgtype.UUID{
+			Bytes: param.UserID,
 			Valid: true,
 		},
 
-		ID: param.RoomID,
+		ID: pgtype.UUID{
+			Bytes: param.RoomID,
+			Valid: true,
+		},
 	})
 	if err != nil {
 		return "", ErrReservationFailed
@@ -61,7 +64,7 @@ func (rs *roomService) createCheckoutSession(ctx context.Context, req CheckoutRe
 		return CheckoutResponse{}, err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, rs.url, bytes.NewBuffer(bbyte))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, rs.url, bytes.NewBuffer(bbyte))
 	if err != nil {
 		return CheckoutResponse{}, err
 	}
@@ -79,23 +82,27 @@ func (rs *roomService) createCheckoutSession(ctx context.Context, req CheckoutRe
 func (rs *roomService) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error) {
 	rm, err := rs.Querier.UpdateRoom(ctx, db.UpdateRoomParams{
 		Status: db.RoomStatus(param.Status),
-		UserID: uuid.NullUUID{
-			UUID:  param.UserID,
+		UserID: pgtype.UUID{
+			Bytes: param.UserID,
 			Valid: true,
 		},
-		ID: param.ID,
+
+		ID: pgtype.UUID{
+			Bytes: param.ID,
+			Valid: true,
+		},
 	})
 	if err != nil {
 		rs.logger.Error("failed to update room", err)
 		return Room{}, err
 	}
 	return Room{
-		ID:         rm.ID,
+		ID:         rm.ID.Bytes,
 		RoomNumber: rm.RoomNumber,
-		UserID:     rm.UserID.UUID,
-		HotelID:    rm.HotelID,
-		CreatedAt:  rm.CreatedAt,
-		UpdatedAt:  rm.UpdatedAt,
+		UserID:     rm.UserID.Bytes,
+		HotelID:    rm.HotelID.Bytes,
+		CreatedAt:  rm.CreatedAt.Time,
+		UpdatedAt:  rm.UpdatedAt.Time,
 	}, nil
 }
 

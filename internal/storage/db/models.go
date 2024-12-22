@@ -5,12 +5,10 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type RoomStatus string
@@ -57,33 +55,33 @@ func (ns NullRoomStatus) Value() (driver.Value, error) {
 }
 
 type Hotel struct {
-	ID        uuid.UUID
+	ID        pgtype.UUID
 	Name      string
-	Rating    sql.NullFloat64
+	Rating    pgtype.Float8
 	Location  []float64
-	ImageUrl  sql.NullString
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ImageUrl  pgtype.Text
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type Room struct {
-	ID         uuid.UUID
+	ID         pgtype.UUID
 	RoomNumber string
-	UserID     uuid.NullUUID
-	HotelID    uuid.UUID
+	UserID     pgtype.UUID
+	HotelID    pgtype.UUID
 	Status     RoomStatus
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
 
 type User struct {
-	ID          uuid.UUID
+	ID          pgtype.UUID
 	FirstName   string
 	LastName    string
 	PhoneNumber string
 	Email       string
 	Password    string
 	Username    string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CreatedAt   pgtype.Timestamp
+	UpdatedAt   pgtype.Timestamp
 }

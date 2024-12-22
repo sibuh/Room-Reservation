@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
 
@@ -44,7 +45,14 @@ func (a *middleware) Authorize() gin.HandlerFunc {
 			c.AbortWithError(http.StatusUnauthorized, errors.New("token is not of type bearer"))
 		}
 		payload, err := token.VerifyToken(slicedToken[1], a.logger)
-		user, err := a.Querier.GetUserByID(context.Background(), uuid.MustParse(payload.ID))
+		if err != nil {
+			a.logger.Info("invalid token", err)
+			c.AbortWithError(http.StatusUnauthorized, err)
+		}
+		user, err := a.Querier.GetUserByID(context.Background(), pgtype.UUID{
+			Bytes: uuid.MustParse(payload.ID),
+			Valid: true,
+		})
 		if err != nil {
 			a.logger.InfoContext(context.Background(), "user does not exist")
 			c.AbortWithError(http.StatusUnauthorized, errors.New("user not found"))

@@ -2,10 +2,10 @@ package hotel
 
 import (
 	"context"
-	"database/sql"
 	"reservation/internal/storage/db"
 
 	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
 
@@ -52,7 +52,7 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 	htl, err := h.CreateHotel(ctx, db.CreateHotelParams{
 		Name:     param.Name,
 		Location: []float64{param.Location.Latitude, param.Location.Longitude},
-		Rating: sql.NullFloat64{
+		Rating: pgtype.Float8{
 			Float64: param.Rating,
 			Valid:   true,
 		},

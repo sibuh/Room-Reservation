@@ -7,7 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createHotel = `-- name: CreateHotel :one
@@ -19,7 +20,7 @@ insert into hotels
 type CreateHotelParams struct {
 	Name     string
 	Location []float64
-	Rating   sql.NullFloat64
+	Rating   pgtype.Float8
 }
 
 func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error) {

@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const updateRoom = `-- name: UpdateRoom :one
@@ -19,8 +19,8 @@ returning id, room_number, user_id, hotel_id, status, created_at, updated_at
 
 type UpdateRoomParams struct {
 	Status RoomStatus
-	UserID uuid.NullUUID
-	ID     uuid.UUID
+	UserID pgtype.UUID
+	ID     pgtype.UUID
 }
 
 func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error) {
