@@ -2,10 +2,12 @@ package initiator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"reservation/internal/service/hotel"
@@ -25,6 +27,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slog"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/cockroachdb"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type route struct {
@@ -38,10 +44,14 @@ func Initiate() {
 
 	//initialize viper
 	viper.SetConfigFile("config/config.yaml")
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		log.Fatal(fmt.Errorf("fatal error config file: %w", err))
+	}
 
 	//create connection to database
-	fmt.Println("conn====>", viper.GetString("db_conn"))
-	pool, err := pgxpool.NewWithConfig(context.Background(), CreateDBConfig(viper.GetString("db_conn")))
+	connString := viper.GetString("db_conn")
+	pool, err := pgxpool.NewWithConfig(context.Background(), CreateDBConfig(connString))
 	if err != nil {
 		log.Fatal("failed to create connection pool", err)
 	}
@@ -53,7 +63,12 @@ func Initiate() {
 
 	//create logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{}))
-
+	_, err = conn.Exec(context.Background(), "create database if not exists reservation")
+	if err != nil {
+		log.Fatal("failed to create database", err)
+	}
+	//do database migration
+	DoMigration(connString, "internal/storage/schema")
 	// initialize storage layer
 	queries := db.New(conn)
 	//load env
@@ -69,7 +84,7 @@ func Initiate() {
 	hotelService := hotel.NewHotelService(queries, logger)
 
 	//initialize middlewares
-	mw := middleware.NewMiddleware(logger, queries)
+	mw := middleware.NewMiddleware(logger, queries, key)
 
 	//initialize handlers
 	hotelHandler := hh.NewHotelHandler(logger, hotelService)
@@ -93,7 +108,7 @@ func Initiate() {
 		{
 			path:    "/refresh",
 			method:  http.MethodGet,
-			handler: userHandler.Login,
+			handler: userHandler.Refresh,
 			middlewares: []gin.HandlerFunc{
 				mw.Authorize(),
 			},
@@ -120,6 +135,7 @@ func Initiate() {
 	allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)
 
 	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
 
 	RegisterRoutes(&r.RouterGroup, allRoutes)
 
@@ -172,4 +188,17 @@ func CreateDBConfig(url string) *pgxpool.Config {
 	}
 
 	return dbConfig
+}
+
+func DoMigration(connString, filePath string) {
+	m, err := migrate.New(fmt.Sprintf("file://%s", filePath),
+		"cockroachdb://"+strings.Split(connString, "//")[1])
+	if err != nil {
+		log.Fatal("failed to create migration instance", err)
+	}
+	if err := m.Up(); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			log.Fatal("failed to do migration: ", err)
+		}
+	}
 }

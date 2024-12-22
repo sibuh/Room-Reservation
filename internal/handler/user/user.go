@@ -8,7 +8,7 @@ import (
 	"reservation/internal/service/user"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
 
@@ -66,13 +66,13 @@ func (uh *userHandler) Login(c *gin.Context) {
 	})
 }
 func (uh *userHandler) Refresh(c *gin.Context) {
-	userID, ok := c.Value("user_id").(uuid.UUID)
+	userID, ok := c.Value("user_id").(pgtype.UUID)
 	if !ok {
 		uh.logger.Info("user id not set on context", errors.New("user not set on context"))
 		c.JSON(http.StatusBadRequest, nil)
 		return
 	}
-	token, err := uh.userService.RefreshToken(context.Background(), userID)
+	token, err := uh.userService.RefreshToken(context.Background(), userID.Bytes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return

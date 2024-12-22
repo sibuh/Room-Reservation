@@ -1,2 +1,2 @@
-db_conn: postgresql://root@db:26257/reservation?sslmode=disable
+db_conn: postgresql://root@localhost:26257/reservation?sslmode=disable
 token_duration: 1m

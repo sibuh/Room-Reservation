@@ -58,7 +58,7 @@ func (us *userService) Signup(ctx context.Context, sup SignupRequest) (string, e
 	}
 	// create token
 	t, err := token.CreateToken(token.Payload{
-		ID:        usr.ID.String(),
+		ID:        usr.ID.Bytes,
 		CreatedAt: time.Now(),
 		Duration:  us.Duration,
 	}, us.key, us.logger)
@@ -85,7 +85,7 @@ func (us *userService) Login(ctx context.Context, lin LoginRequest) (string, err
 		return "", errors.New("incorrect password ")
 	}
 	tkn, err := token.CreateToken(token.Payload{
-		ID:        user.ID.String(),
+		ID:        uuid.UUID(user.ID.Bytes),
 		CreatedAt: time.Now(),
 		Duration:  us.Duration,
 	}, us.key, us.logger)
@@ -96,7 +96,7 @@ func (us *userService) Login(ctx context.Context, lin LoginRequest) (string, err
 }
 func (us *userService) RefreshToken(ctx context.Context, userID uuid.UUID) (string, error) {
 	tkn, err := token.CreateToken(token.Payload{
-		ID:        userID.String(),
+		ID:        userID,
 		CreatedAt: time.Now(),
 		Duration:  us.Duration,
 	}, us.key, us.logger)
