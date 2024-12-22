@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"reservation/internal/service/hotel"
 	"reservation/internal/service/room"
@@ -20,6 +19,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4"
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 	"golang.org/x/exp/slog"
 )
 
@@ -30,23 +31,35 @@ type route struct {
 	middlewares []gin.HandlerFunc
 }
 
+func ReadConfig(path string) {
+	viper.AddConfigPath(path)
+
+}
+
 func Initiate() {
+	//initialize viper
+	viper.SetConfigFile("config/config.yaml")
 	//create connection to database
-	conn, err := pgx.Connect(context.Background(), "")
+	conn, err := pgx.Connect(context.Background(), viper.GetString("db_conn"))
 	if err != nil {
 		log.Fatal("failed to create connection to db", err)
 	}
+
 	//create logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{}))
 
 	// initialize storage layer
 	queries := db.New(conn)
-	key := "1234567890sdfghjkjjkhk"
-	duration := 1 * time.Minute
+	//load env
+	godotenv.Load(".env")
+	key := os.Getenv("TOKEN_KEY")
+	duration := viper.GetDuration("token_duration")
+
 	//initialize services
 	userService := user.NewUserService(logger, queries, key, duration)
 	roomService := room.NewRoomService(queries, "url")
 	hotelService := hotel.NewHotelService(queries, logger)
+
 	//initialize middlewares
 	mw := middleware.NewMiddleware(logger, queries)
 
