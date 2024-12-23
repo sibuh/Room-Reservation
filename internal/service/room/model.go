@@ -1,6 +1,7 @@
 package room
 
 import (
+	"errors"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -44,7 +45,17 @@ type CheckoutResponse struct {
 func (rr ReserveRoom) Validate() error {
 	return validation.ValidateStruct(
 		&rr,
-		validation.Field(&rr.RoomID, validation.Required.Error("room id is required")),
+		validation.Field(&rr.RoomID, validation.Required.Error("room id is required"),
+			validation.By(func(value interface{}) error {
+				v, ok := value.(uuid.UUID)
+				if !ok {
+					return errors.New("value is not uuid type")
+				}
+				if v == uuid.Nil {
+					return errors.New("room id can not be null")
+				}
+				return nil
+			})),
 		validation.Field(&rr.UserID, validation.Required.Error("user id is required")),
 		validation.Field(&rr.FromTime, validation.Required.Error("From time is required"),
 			validation.Min(time.Now()).Error("from time can not be past time")),
