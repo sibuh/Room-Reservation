@@ -5,6 +5,7 @@ CREATE TABLE public.rooms (
     room_number VARCHAR(255) NOT NULL DEFAULT 'G00',
     user_id uuid NULL references users(id),
     hotel_id uuid NOT NULL references hotels(id),
+    price FLOAT NOT NULL DEFAULT 0,
     status room_status NOT NULL DEFAULT 'FREE',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()

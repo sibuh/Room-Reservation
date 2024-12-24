@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"reservation/internal/storage/db"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/stripe/stripe-go/paymentintent"
 	"github.com/stripe/stripe-go/v78"
+	"github.com/stripe/stripe-go/v78/paymentintent"
 
 	"golang.org/x/exp/slog"
 )
@@ -59,15 +60,7 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (stri
 		return "", errors.New("failed to make reservation")
 	}
 
-	req := CheckoutRequest{
-		ProductID:   param.RoomID.String(),
-		CallbackURL: "http://localhost:9090/callback", //TODO: url should be read from config
-	}
-	ssn, err := rs.createCheckoutSession(ctx, req)
-	if err != nil {
-		return "", ErrCheckoutSessionFailed
-	}
-	return ssn.PaymentURL, nil
+	return "", nil
 
 }
 func (rs *roomService) createCheckoutSession(ctx context.Context, req CheckoutRequest) (CheckoutResponse, error) {
@@ -117,19 +110,27 @@ func (rs *roomService) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, 
 		UpdatedAt:  rm.UpdatedAt.Time,
 	}, nil
 }
-func (rs *roomService) createPaymentIntent(ctx, roomID, userID string) (string, error) {
-
-	stripe.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc" // change this key to my own
-
+func (rs *roomService) createPaymentIntent(ctx context.Context, roomID, userID string) (string, error) {
+	room, err := rs.Querier.GetRoom(ctx, pgtype.UUID{Bytes: uuid.MustParse(roomID), Valid: true})
+	if err != nil {
+		return "", err
+	}
+	stripe.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
 	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(2000),
+		Amount:   stripe.Int64(int64(room.Price)),
 		Currency: stripe.String(string(stripe.CurrencyUSD)),
 		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
 			Enabled: stripe.Bool(true),
 		},
 	}
-	result, err := paymentintent.New(params)
-	return "", nil
+
+	pi, err := paymentintent.New(params)
+	if err != nil {
+		rs.logger.Error("failed to create stripe payment intent")
+		return "", err
+	}
+
+	return pi.ClientSecret, nil
 }
 
 func (rs *roomService) WebhookAction(ctx context.Context, event stripe.Event) {

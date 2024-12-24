@@ -11,10 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getRoom = `-- name: GetRoom :one
+select id, room_number, user_id, hotel_id, price, status, created_at, updated_at from rooms where id =$1
+`
+
+func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
+	row := q.db.QueryRow(ctx, getRoom, id)
+	var i Room
+	err := row.Scan(
+		&i.ID,
+		&i.RoomNumber,
+		&i.UserID,
+		&i.HotelID,
+		&i.Price,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateRoom = `-- name: UpdateRoom :one
 update rooms set status =$1,user_id =$2 
 where id= $3  
-returning id, room_number, user_id, hotel_id, status, created_at, updated_at
+returning id, room_number, user_id, hotel_id, price, status, created_at, updated_at
 `
 
 type UpdateRoomParams struct {
@@ -31,6 +51,7 @@ func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, e
 		&i.RoomNumber,
 		&i.UserID,
 		&i.HotelID,
+		&i.Price,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,

@@ -121,6 +121,7 @@ type Room struct {
 	RoomNumber string
 	UserID     pgtype.UUID
 	HotelID    pgtype.UUID
+	Price      float64
 	Status     RoomStatus
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
