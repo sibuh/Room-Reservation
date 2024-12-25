@@ -76,11 +76,12 @@ func Initiate() {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 	key := os.Getenv("TOKEN_KEY")
+	stripeSecretKey := os.Getenv("STRIPE_SECRET_KEY")
 	duration := viper.GetDuration("token_duration")
 
 	//initialize services
 	userService := user.NewUserService(logger, queries, key, duration)
-	roomService := room.NewRoomService(queries, "url")
+	roomService := room.NewRoomService(queries, logger, stripeSecretKey)
 	hotelService := hotel.NewHotelService(queries, logger)
 
 	//initialize middlewares

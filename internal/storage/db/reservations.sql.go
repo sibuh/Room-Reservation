@@ -44,3 +44,26 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 	)
 	return i, err
 }
+
+const updateReservation = `-- name: UpdateReservation :one
+update reservations set status=$1 where id =$2 returning id, room_id, user_id, status, from_time, to_time
+`
+
+type UpdateReservationParams struct {
+	Status ReservationStatus
+	ID     pgtype.UUID
+}
+
+func (q *Queries) UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error) {
+	row := q.db.QueryRow(ctx, updateReservation, arg.Status, arg.ID)
+	var i Reservation
+	err := row.Scan(
+		&i.ID,
+		&i.RoomID,
+		&i.UserID,
+		&i.Status,
+		&i.FromTime,
+		&i.ToTime,
+	)
+	return i, err
+}

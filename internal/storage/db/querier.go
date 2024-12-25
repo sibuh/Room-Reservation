@@ -17,6 +17,7 @@ type Querier interface {
 	GetRoom(ctx context.Context, id pgtype.UUID) (Room, error)
 	GetUser(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error)
 	UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error)
 }
 
