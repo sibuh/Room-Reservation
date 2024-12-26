@@ -11,6 +11,10 @@ import (
 
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
+	SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error)
+}
+type SearchHotelParam struct {
+	Location Location `json:"location"`
 }
 
 type Location struct {
@@ -64,4 +68,15 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 
 	return htl, nil
 
+}
+func (h *hotelService) SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error) {
+	return db.Hotel{}, nil
+}
+func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
+	hotels, err := h.GetHotels(ctx)
+	if err != nil {
+		h.logger.Info("failed to get hotels", err)
+		return nil, err
+	}
+	return hotels, nil
 }
