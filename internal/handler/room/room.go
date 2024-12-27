@@ -72,3 +72,13 @@ func (rh *roomHandler) PaymentWebhook(c *gin.Context) {
 func (rh *roomHandler) GetPublishableKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"publishableKey": rh.publishableKey})
 }
+
+func (rh *roomHandler) GetRoomReservations(c *gin.Context) {
+	roomID := c.Param("room_id")
+	rvns, err := rh.srv.GetRoomReservations(context.Background(), roomID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, rvns)
+}

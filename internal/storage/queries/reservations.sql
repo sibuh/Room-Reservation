@@ -5,3 +5,6 @@ returning *;
 
 -- name: UpdateReservation :one 
 update reservations set status=$1 where id =$2 returning *;
+
+-- name: GetRoomReservations :many
+select * from reservations where room_id =$1 and (from_time > now() or to_time > now());

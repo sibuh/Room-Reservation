@@ -15,6 +15,7 @@ type Querier interface {
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetRoom(ctx context.Context, id pgtype.UUID) (Room, error)
+	GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error)
 	GetUser(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error)

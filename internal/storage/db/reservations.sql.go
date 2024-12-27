@@ -45,6 +45,37 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 	return i, err
 }
 
+const getRoomReservations = `-- name: GetRoomReservations :many
+select id, room_id, user_id, status, from_time, to_time from reservations where room_id =$1 and (from_time > now() or to_time > now())
+`
+
+func (q *Queries) GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error) {
+	rows, err := q.db.Query(ctx, getRoomReservations, roomID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reservation
+	for rows.Next() {
+		var i Reservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoomID,
+			&i.UserID,
+			&i.Status,
+			&i.FromTime,
+			&i.ToTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateReservation = `-- name: UpdateReservation :one
 update reservations set status=$1 where id =$2 returning id, room_id, user_id, status, from_time, to_time
 `

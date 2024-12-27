@@ -18,6 +18,7 @@ type RoomService interface {
 	ReserveRoom(ctx context.Context, param ReserveRoom) (string, error)
 	UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error)
 	WebhookAction(ctx context.Context, event stripe.Event) error
+	GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error)
 }
 
 type ReservationStatus string
@@ -154,4 +155,16 @@ func (rs *roomService) WebhookAction(ctx context.Context, event stripe.Event) er
 
 	return nil
 	// TODO: change status of reservation to FAILED
+}
+func (rs *roomService) GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error) {
+	rvns, err := rs.Querier.GetRoomReservations(ctx,
+		pgtype.UUID{
+			Bytes: uuid.MustParse(roomID),
+			Valid: true,
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	return rvns, nil
 }
