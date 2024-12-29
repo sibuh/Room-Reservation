@@ -14,7 +14,7 @@ import (
 const createHotel = `-- name: CreateHotel :one
 insert into hotels
  (name,location,rating)values($1,$2,$3)
- returning id, name, rating, location, image_url, created_at, updated_at
+ returning id, name, owner_id, rating, location, image_url, created_at, updated_at
 `
 
 type CreateHotelParams struct {
@@ -29,6 +29,7 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.OwnerID,
 		&i.Rating,
 		&i.Location,
 		&i.ImageUrl,

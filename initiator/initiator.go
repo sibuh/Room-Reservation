@@ -139,8 +139,11 @@ func Initiate() {
 	gin.SetMode(gin.ReleaseMode)
 
 	RegisterRoutes(&r.RouterGroup, allRoutes)
-
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	}
+	if err := http.ListenAndServe(port, r); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("server started successfully")

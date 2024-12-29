@@ -100,6 +100,7 @@ func (ns NullRoomStatus) Value() (driver.Value, error) {
 type Hotel struct {
 	ID        pgtype.UUID
 	Name      string
+	OwnerID   pgtype.UUID
 	Rating    pgtype.Float8
 	Location  []float64
 	ImageUrl  pgtype.Text
