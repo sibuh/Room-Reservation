@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	apperror "reservation/internal/app_error"
 	"reservation/internal/storage/db"
 
 	"github.com/google/uuid"
@@ -45,7 +47,11 @@ func NewRoomService(q db.Querier, logger *slog.Logger, key string) RoomService {
 
 func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (string, error) {
 	if err := param.Validate(); err != nil {
-		return "", ErrInvalidInput
+
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: err,
+		}
 	}
 
 	rvn, err := rs.CreateReservation(ctx, db.CreateReservationParams{
@@ -56,7 +62,11 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (stri
 		ToTime:   pgtype.Timestamptz{Time: param.ToTime, Valid: true},
 	})
 	if err != nil {
-		return "", errors.New("failed to make reservation")
+		rs.logger.Error("failed to create reservation", err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to make reservation"),
+		}
 	}
 	secretKey, err := rs.createPaymentIntent(ctx, rvn.ID.String(), param.RoomID.String())
 	if err != nil {
