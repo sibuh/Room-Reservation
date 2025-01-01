@@ -178,3 +178,14 @@ func (rs *roomService) GetRoomReservations(ctx context.Context, roomID string) (
 
 	return rvns, nil
 }
+
+// search rooms based on price,location,date
+// and other criterias
+
+func (rs *roomService) SearchRoom(ctx context.Context, searchParam SearchParam) ([]db.Room, error) {
+	if err := searchParam.Validate(); err != nil {
+		return nil, ErrInvalidInput
+	}
+
+	return nil, nil
+}

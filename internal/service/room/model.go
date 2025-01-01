@@ -69,3 +69,19 @@ type CheckoutRequest struct {
 
 type CallBackRequest struct {
 }
+type SearchParam struct {
+	FromTime time.Time `json:"From_time"`
+	ToTime   time.Time `json:"to_time"`
+	Location struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	} `json:"location"`
+	Price float64 `json:"price"`
+}
+
+func (sp SearchParam) Validate() error {
+	return validation.ValidateStruct(&sp,
+		validation.Field(&sp.FromTime, validation.Required.Error("from_time is required")),
+		validation.Field(&sp.ToTime, validation.Required.Error("to_time is required")),
+	)
+}
