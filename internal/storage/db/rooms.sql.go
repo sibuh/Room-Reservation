@@ -31,6 +31,56 @@ func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
 	return i, err
 }
 
+const searchRoom = `-- name: SearchRoom :many
+select id, room_number, user_id, hotel_id, price, status, created_at, updated_at from rooms 
+where price < $1 
+and hotel_id in (select id from hotels where ST_DWithin(location, ST_GeogPoint($2, $3), 1000))
+and roon_id not in(select id from reservations where from_time between $4 and $5 or to_time between $4 and $5)
+`
+
+type SearchRoomParams struct {
+	Price         float64
+	StGeogpoint   interface{}
+	StGeogpoint_2 interface{}
+	FromTime      pgtype.Timestamptz
+	FromTime_2    pgtype.Timestamptz
+}
+
+func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room, error) {
+	rows, err := q.db.Query(ctx, searchRoom,
+		arg.Price,
+		arg.StGeogpoint,
+		arg.StGeogpoint_2,
+		arg.FromTime,
+		arg.FromTime_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Room
+	for rows.Next() {
+		var i Room
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoomNumber,
+			&i.UserID,
+			&i.HotelID,
+			&i.Price,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateRoom = `-- name: UpdateRoom :one
 update rooms set status =$1,user_id =$2 
 where id= $3  
