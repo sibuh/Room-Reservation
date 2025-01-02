@@ -60,6 +60,7 @@ const (
 	RoomStatusFREE     RoomStatus = "FREE"
 	RoomStatusHELD     RoomStatus = "HELD"
 	RoomStatusRESERVED RoomStatus = "RESERVED"
+	RoomStatusOCCUPAID RoomStatus = "OCCUPAID"
 )
 
 func (e *RoomStatus) Scan(src interface{}) error {
@@ -97,6 +98,54 @@ func (ns NullRoomStatus) Value() (driver.Value, error) {
 	return string(ns.RoomStatus), nil
 }
 
+type Roomtype string
+
+const (
+	RoomtypeSINGLEROOM Roomtype = "SINGLE_ROOM"
+	RoomtypeDOUBLEROOM Roomtype = "DOUBLE_ROOM"
+	RoomtypeTWINROOM   Roomtype = "TWIN_ROOM"
+	RoomtypeTRIPLEROOM Roomtype = "TRIPLE_ROOM"
+	RoomtypeQUADROOM   Roomtype = "QUAD_ROOM"
+	RoomtypeQEENROOM   Roomtype = "QEEN_ROOM"
+	RoomtypeKINGROOM   Roomtype = "KING_ROOM"
+	RoomtypeSUITROOM   Roomtype = "SUIT_ROOM"
+)
+
+func (e *Roomtype) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Roomtype(s)
+	case string:
+		*e = Roomtype(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Roomtype: %T", src)
+	}
+	return nil
+}
+
+type NullRoomtype struct {
+	Roomtype Roomtype
+	Valid    bool // Valid is true if Roomtype is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRoomtype) Scan(value interface{}) error {
+	if value == nil {
+		ns.Roomtype, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Roomtype.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRoomtype) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Roomtype), nil
+}
+
 type Hotel struct {
 	ID        pgtype.UUID
 	Name      string
@@ -119,13 +168,23 @@ type Reservation struct {
 
 type Room struct {
 	ID         pgtype.UUID
-	RoomNumber string
-	UserID     pgtype.UUID
+	RoomNumber int32
 	HotelID    pgtype.UUID
+	RoomTypeID pgtype.UUID
 	Price      float64
+	Floor      string
 	Status     RoomStatus
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
+}
+
+type RoomType struct {
+	ID          pgtype.UUID
+	RoomType    Roomtype
+	Description string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
 }
 
 type User struct {

@@ -18,7 +18,7 @@ const (
 
 type Room struct {
 	ID         uuid.UUID
-	RoomNumber string
+	RoomNumber int32
 	UserID     uuid.UUID
 	HotelID    uuid.UUID
 	CreatedAt  time.Time
@@ -76,7 +76,8 @@ type SearchParam struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
 	} `json:"location"`
-	Price float64 `json:"price"`
+	Price    float64 `json:"price"`
+	RoomType string  `json:"room_type"`
 }
 
 func (sp SearchParam) Validate() error {

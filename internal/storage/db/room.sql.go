@@ -28,7 +28,6 @@ func (q *Queries) HoldRoom(ctx context.Context, arg HoldRoomParams) (Room, error
 	err := row.Scan(
 		&i.ID,
 		&i.RoomNumber,
-		&i.UserID,
 		&i.HotelID,
 		&i.Status,
 		&i.CreatedAt,

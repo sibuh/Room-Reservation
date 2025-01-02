@@ -2,6 +2,7 @@ package room
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -79,11 +80,6 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (stri
 func (rs *roomService) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error) {
 	rm, err := rs.Querier.UpdateRoom(ctx, db.UpdateRoomParams{
 		Status: db.RoomStatus(param.Status),
-		UserID: pgtype.UUID{
-			Bytes: param.UserID,
-			Valid: true,
-		},
-
 		ID: pgtype.UUID{
 			Bytes: param.ID,
 			Valid: true,
@@ -96,7 +92,6 @@ func (rs *roomService) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, 
 	return Room{
 		ID:         rm.ID.Bytes,
 		RoomNumber: rm.RoomNumber,
-		UserID:     rm.UserID.Bytes,
 		HotelID:    rm.HotelID.Bytes,
 		CreatedAt:  rm.CreatedAt.Time,
 		UpdatedAt:  rm.UpdatedAt.Time,
@@ -105,7 +100,12 @@ func (rs *roomService) UpdateRoom(ctx context.Context, param UpdateRoom) (Room, 
 func (rs *roomService) createPaymentIntent(ctx context.Context, rvnID, roomID string) (string, error) {
 	room, err := rs.Querier.GetRoom(ctx, pgtype.UUID{Bytes: uuid.MustParse(roomID), Valid: true})
 	if err != nil {
-		return "", err
+		if errors.Is(err, sql.ErrNoRows) {
+			rs.logger.Info("room not found", err)
+			return "", &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+		}
+		rs.logger.Error("failed to get room", err)
+		return "", &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
 	}
 
 	params := &stripe.PaymentIntentParams{
@@ -116,7 +116,6 @@ func (rs *roomService) createPaymentIntent(ctx context.Context, rvnID, roomID st
 		},
 		Metadata: map[string]string{
 			"room_id": roomID,
-			"user_id": room.UserID.String(),
 			"id":      rvnID,
 		},
 	}
@@ -124,7 +123,10 @@ func (rs *roomService) createPaymentIntent(ctx context.Context, rvnID, roomID st
 	pi, err := paymentintent.New(params)
 	if err != nil {
 		rs.logger.Error("failed to create stripe payment intent")
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: err,
+		}
 	}
 
 	return pi.ClientSecret, nil
@@ -137,7 +139,10 @@ func (rs *roomService) WebhookAction(ctx context.Context, event stripe.Event) er
 		err := json.Unmarshal(event.Data.Raw, &paymentIntent)
 		if err != nil {
 			rs.logger.Error("Error parsing webhook JSON", err)
-			return err
+			return &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to unmarshal data"),
+			}
 		}
 		rvn, err := rs.UpdateReservation(ctx, db.UpdateReservationParams{
 			Status: db.ReservationStatus(StatusSuccessful),
@@ -167,13 +172,19 @@ func (rs *roomService) WebhookAction(ctx context.Context, event stripe.Event) er
 	// TODO: change status of reservation to FAILED
 }
 func (rs *roomService) GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error) {
+	//TODO:add filter to get rooms
 	rvns, err := rs.Querier.GetRoomReservations(ctx,
 		pgtype.UUID{
 			Bytes: uuid.MustParse(roomID),
 			Valid: true,
 		})
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			rs.logger.Info("rooms not found", err)
+			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+		}
+		rs.logger.Error("failed to get rooms", err)
+		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
 	}
 
 	return rvns, nil
@@ -184,8 +195,31 @@ func (rs *roomService) GetRoomReservations(ctx context.Context, roomID string) (
 
 func (rs *roomService) SearchRoom(ctx context.Context, searchParam SearchParam) ([]db.Room, error) {
 	if err := searchParam.Validate(); err != nil {
-		return nil, ErrInvalidInput
+		rs.logger.Info("invalid search param", err)
+		return nil, &apperror.AppError{ErrorCode: http.StatusBadRequest, RootError: err}
+	}
+	rooms, err := rs.Querier.SearchRoom(ctx, db.SearchRoomParams{
+		Price:         searchParam.Price,
+		StGeogpoint:   searchParam.Location.Latitude,
+		StGeogpoint_2: searchParam.Location.Longitude,
+		FromTime: pgtype.Timestamptz{
+			Time:  searchParam.FromTime,
+			Valid: true,
+		},
+		FromTime_2: pgtype.Timestamptz{
+			Time:  searchParam.ToTime,
+			Valid: true,
+		},
+		RoomType: db.Roomtype(searchParam.RoomType),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			rs.logger.Info("rooms not found", err)
+			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+		}
+		rs.logger.Error("failed to get rooms", err)
+		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
 	}
 
-	return nil, nil
+	return rooms, nil
 }

@@ -12,7 +12,7 @@ import (
 )
 
 const getRoom = `-- name: GetRoom :one
-select id, room_number, user_id, hotel_id, price, status, created_at, updated_at from rooms where id =$1
+select id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at from rooms where id =$1
 `
 
 func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
@@ -21,9 +21,10 @@ func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.RoomNumber,
-		&i.UserID,
 		&i.HotelID,
+		&i.RoomTypeID,
 		&i.Price,
+		&i.Floor,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -32,10 +33,11 @@ func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
 }
 
 const searchRoom = `-- name: SearchRoom :many
-select id, room_number, user_id, hotel_id, price, status, created_at, updated_at from rooms 
+select id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at from rooms 
 where price < $1 
 and hotel_id in (select id from hotels where ST_DWithin(location, ST_GeogPoint($2, $3), 1000))
 and roon_id not in(select id from reservations where from_time between $4 and $5 or to_time between $4 and $5)
+and $6 =(select room_type from room_types where id=room_type_id)
 `
 
 type SearchRoomParams struct {
@@ -44,6 +46,7 @@ type SearchRoomParams struct {
 	StGeogpoint_2 interface{}
 	FromTime      pgtype.Timestamptz
 	FromTime_2    pgtype.Timestamptz
+	RoomType      Roomtype
 }
 
 func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room, error) {
@@ -53,6 +56,7 @@ func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room,
 		arg.StGeogpoint_2,
 		arg.FromTime,
 		arg.FromTime_2,
+		arg.RoomType,
 	)
 	if err != nil {
 		return nil, err
@@ -64,9 +68,10 @@ func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room,
 		if err := rows.Scan(
 			&i.ID,
 			&i.RoomNumber,
-			&i.UserID,
 			&i.HotelID,
+			&i.RoomTypeID,
 			&i.Price,
+			&i.Floor,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -82,26 +87,26 @@ func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room,
 }
 
 const updateRoom = `-- name: UpdateRoom :one
-update rooms set status =$1,user_id =$2 
-where id= $3  
-returning id, room_number, user_id, hotel_id, price, status, created_at, updated_at
+update rooms set status =$1
+where id= $2  
+returning id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at
 `
 
 type UpdateRoomParams struct {
 	Status RoomStatus
-	UserID pgtype.UUID
 	ID     pgtype.UUID
 }
 
 func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error) {
-	row := q.db.QueryRow(ctx, updateRoom, arg.Status, arg.UserID, arg.ID)
+	row := q.db.QueryRow(ctx, updateRoom, arg.Status, arg.ID)
 	var i Room
 	err := row.Scan(
 		&i.ID,
 		&i.RoomNumber,
-		&i.UserID,
 		&i.HotelID,
+		&i.RoomTypeID,
 		&i.Price,
+		&i.Floor,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
