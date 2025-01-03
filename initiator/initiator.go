@@ -137,6 +137,8 @@ func Initiate() {
 
 	r := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
+	//register error handler for all routes
+	r.Use(middleware.ErrorHandler())
 
 	RegisterRoutes(&r.RouterGroup, allRoutes)
 	port := os.Getenv("PORT")

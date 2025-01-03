@@ -7,7 +7,7 @@ CREATE TABLE public.hotels(
     owner_id uuid NOT NULL references users(id),
     rating Float NOT NULL DEFAULT 1,
     location Float[] NOT NULL,
-    image_url VARCHAR(255) NOT NULL,
+    image_urls VARCHAR(255)[] NOT NULL,
     status hotel_status NOT NULL DEFAULT 'PENDING',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()

@@ -41,13 +41,17 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 			Bytes: param.OwnerID,
 			Valid: true,
 		},
-		Location: []float64{param.Location.Latitude, param.Location.Longitude},
-		Rating:   param.Rating,
-		ImageUrl: param.ImageURL,
+		Location:  []float64{param.Location.Latitude, param.Location.Longitude},
+		Rating:    param.Rating,
+		ImageUrls: param.ImageURLs,
 	})
 
 	if err != nil {
-		return db.Hotel{}, err
+		h.logger.Error("failed to register hotel", err)
+		return db.Hotel{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToCreate,
+		}
 	}
 
 	return htl, nil

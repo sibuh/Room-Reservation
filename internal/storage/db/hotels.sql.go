@@ -12,16 +12,16 @@ import (
 )
 
 const createHotel = `-- name: CreateHotel :one
-insert into hotels(name,owner_id,location,rating,image_url)values($1,$2,$3,$4,$5)
- returning id, name, owner_id, rating, location, image_url, status, created_at, updated_at
+insert into hotels(name,owner_id,location,rating,image_urls)values($1,$2,$3,$4,$5)
+ returning id, name, owner_id, rating, location, image_urls, status, created_at, updated_at
 `
 
 type CreateHotelParams struct {
-	Name     string
-	OwnerID  pgtype.UUID
-	Location []float64
-	Rating   float64
-	ImageUrl string
+	Name      string
+	OwnerID   pgtype.UUID
+	Location  []float64
+	Rating    float64
+	ImageUrls []string
 }
 
 func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error) {
@@ -30,7 +30,7 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 		arg.OwnerID,
 		arg.Location,
 		arg.Rating,
-		arg.ImageUrl,
+		arg.ImageUrls,
 	)
 	var i Hotel
 	err := row.Scan(
@@ -39,7 +39,7 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 		&i.OwnerID,
 		&i.Rating,
 		&i.Location,
-		&i.ImageUrl,
+		&i.ImageUrls,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -48,7 +48,7 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 }
 
 const getHotels = `-- name: GetHotels :many
- select id, name, owner_id, rating, location, image_url, status, created_at, updated_at from hotels
+ select id, name, owner_id, rating, location, image_urls, status, created_at, updated_at from hotels
 `
 
 func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
@@ -66,7 +66,7 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 			&i.OwnerID,
 			&i.Rating,
 			&i.Location,
-			&i.ImageUrl,
+			&i.ImageUrls,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,

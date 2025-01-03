@@ -6,6 +6,7 @@ var (
 	ErrInvalidInput   = errors.New("invalid input")
 	ErrRecordNotFound = errors.New("resource not found")
 	ErrUnableToGet    = errors.New("unable to get")
+	ErrUnableToCreate = errors.New("unable to create")
 )
 
 type AppError struct {

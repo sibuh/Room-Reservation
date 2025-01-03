@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 	"reservation/pkg/token"
 	"strings"
@@ -64,5 +65,13 @@ func (a *middleware) Authorize() gin.HandlerFunc {
 		}
 		c.Set("user_id", user.ID)
 
+	}
+}
+
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+		err := c.Err().(*apperror.AppError)
+		c.JSON(err.ErrorCode, err.RootError)
 	}
 }
