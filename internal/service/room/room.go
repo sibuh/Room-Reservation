@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	apperror "reservation/internal/app_error"
+	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 
 	"github.com/google/uuid"
@@ -22,6 +22,7 @@ type RoomService interface {
 	UpdateRoom(ctx context.Context, param UpdateRoom) (Room, error)
 	WebhookAction(ctx context.Context, event stripe.Event) error
 	GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error)
+	SearchRoom(ctx context.Context, searchParam SearchParam) ([]db.Room, error)
 }
 
 type ReservationStatus string
@@ -102,10 +103,12 @@ func (rs *roomService) createPaymentIntent(ctx context.Context, rvnID, roomID st
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rs.logger.Info("room not found", err)
-			return "", &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+			return "", &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: apperror.ErrRecordNotFound}
 		}
 		rs.logger.Error("failed to get room", err)
-		return "", &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet}
 	}
 
 	params := &stripe.PaymentIntentParams{
@@ -181,10 +184,10 @@ func (rs *roomService) GetRoomReservations(ctx context.Context, roomID string) (
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rs.logger.Info("rooms not found", err)
-			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: apperror.ErrRecordNotFound}
 		}
 		rs.logger.Error("failed to get rooms", err)
-		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
+		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: apperror.ErrUnableToGet}
 	}
 
 	return rvns, nil
@@ -215,10 +218,10 @@ func (rs *roomService) SearchRoom(ctx context.Context, searchParam SearchParam) 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			rs.logger.Info("rooms not found", err)
-			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: ErrRecordNotFound}
+			return nil, &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: apperror.ErrRecordNotFound}
 		}
 		rs.logger.Error("failed to get rooms", err)
-		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: ErrUnableToGet}
+		return nil, &apperror.AppError{ErrorCode: http.StatusInternalServerError, RootError: apperror.ErrUnableToGet}
 	}
 
 	return rooms, nil

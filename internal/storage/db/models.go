@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type HotelStatus string
+
+const (
+	HotelStatusPENDING  HotelStatus = "PENDING"
+	HotelStatusVERIFIED HotelStatus = "VERIFIED"
+)
+
+func (e *HotelStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = HotelStatus(s)
+	case string:
+		*e = HotelStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for HotelStatus: %T", src)
+	}
+	return nil
+}
+
+type NullHotelStatus struct {
+	HotelStatus HotelStatus
+	Valid       bool // Valid is true if HotelStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullHotelStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.HotelStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.HotelStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullHotelStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.HotelStatus), nil
+}
+
 type ReservationStatus string
 
 const (
@@ -150,9 +192,10 @@ type Hotel struct {
 	ID        pgtype.UUID
 	Name      string
 	OwnerID   pgtype.UUID
-	Rating    pgtype.Float8
+	Rating    float64
 	Location  []float64
-	ImageUrl  pgtype.Text
+	ImageUrl  string
+	Status    HotelStatus
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }

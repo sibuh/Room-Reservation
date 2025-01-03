@@ -2,9 +2,10 @@ package hotel
 
 import (
 	"context"
+	"net/http"
+	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 
-	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
@@ -12,27 +13,6 @@ import (
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
 	SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error)
-}
-type SearchHotelParam struct {
-	Location Location `json:"location"`
-}
-
-type Location struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-}
-
-type RegisterHotelParam struct {
-	Name     string   `json:"name"`
-	Location Location `json:"location"`
-	Rating   float64  `json:"rating"`
-}
-
-func (r RegisterHotelParam) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Name, validation.Required.Error("name is required")),
-		validation.Field(&r.Location, validation.Required.Error("location is required")),
-	)
 }
 
 type hotelService struct {
@@ -50,16 +30,20 @@ func NewHotelService(q db.Querier, logger *slog.Logger) HotelService {
 func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error) {
 	if err := param.Validate(); err != nil {
 		h.logger.Info("invalid input", err)
-		return db.Hotel{}, err
+		return db.Hotel{}, &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		}
 	}
-	//TODO: accept hotel image and upload to storage
 	htl, err := h.CreateHotel(ctx, db.CreateHotelParams{
-		Name:     param.Name,
-		Location: []float64{param.Location.Latitude, param.Location.Longitude},
-		Rating: pgtype.Float8{
-			Float64: param.Rating,
-			Valid:   true,
+		Name: param.Name,
+		OwnerID: pgtype.UUID{
+			Bytes: param.OwnerID,
+			Valid: true,
 		},
+		Location: []float64{param.Location.Latitude, param.Location.Longitude},
+		Rating:   param.Rating,
+		ImageUrl: param.ImageURL,
 	})
 
 	if err != nil {
@@ -72,8 +56,9 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 func (h *hotelService) SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error) {
 	return db.Hotel{}, nil
 }
+
 func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
-	hotels, err := h.GetHotels(ctx)
+	hotels, err := h.Querier.GetHotels(ctx)
 	if err != nil {
 		h.logger.Info("failed to get hotels", err)
 		return nil, err
