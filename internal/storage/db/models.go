@@ -214,7 +214,6 @@ type Room struct {
 	RoomNumber int32
 	HotelID    pgtype.UUID
 	RoomTypeID pgtype.UUID
-	Price      float64
 	Floor      string
 	Status     RoomStatus
 	CreatedAt  pgtype.Timestamptz
@@ -224,6 +223,7 @@ type Room struct {
 type RoomType struct {
 	ID          pgtype.UUID
 	RoomType    Roomtype
+	Price       float64
 	Description string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz

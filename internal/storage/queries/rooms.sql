@@ -4,7 +4,15 @@ where id= $2
 returning *;
 
 -- name: GetRoom :one 
-select * from rooms where id =$1;
+select
+r.id, r.room_number, 
+r.hotel_id, r.room_type_id, 
+r.floor, r.status, 
+r.created_at, r.updated_at,
+rt.price
+from rooms r 
+join room_types rt on r.room_type_id=rt.id
+where r.id =$1;
 
 -- name: SearchRoom :many
 select * from rooms 

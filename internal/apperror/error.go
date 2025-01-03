@@ -7,6 +7,7 @@ var (
 	ErrRecordNotFound = errors.New("resource not found")
 	ErrUnableToGet    = errors.New("unable to get")
 	ErrUnableToCreate = errors.New("unable to create")
+	ErrBindingQuery   = errors.New("failed to bind query param")
 )
 
 type AppError struct {

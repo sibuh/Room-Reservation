@@ -12,7 +12,7 @@ import (
 
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
-	SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error)
+	SearchHotels(ctx context.Context, param SearchHotelParam) (db.Hotel, error)
 }
 
 type hotelService struct {
@@ -57,7 +57,7 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 	return htl, nil
 
 }
-func (h *hotelService) SearchHotel(ctx context.Context, param SearchHotelParam) (db.Hotel, error) {
+func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) (db.Hotel, error) {
 	return db.Hotel{}, nil
 }
 

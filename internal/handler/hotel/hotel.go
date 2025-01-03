@@ -17,6 +17,7 @@ import (
 
 type HotelHandler interface {
 	Register(c *gin.Context)
+	SearchHotel(c *gin.Context)
 }
 type hotelHandler struct {
 	logger  *slog.Logger
@@ -61,8 +62,28 @@ func (h *hotelHandler) Register(c *gin.Context) {
 			RootError: err,
 		})
 	}
-	param.Location.Latitude, err = strconv.ParseFloat(values["location"][0], 64)
-	param.Location.Latitude, err = strconv.ParseFloat(values["location"][0], 64)
+	if latitude := values["latitude"][0]; latitude != "" {
+		param.Location.Latitude, err = strconv.ParseFloat(latitude, 64)
+		if err != nil {
+			h.logger.Error("failed to parse latitude from query param", err)
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: apperror.ErrBindingQuery,
+			})
+			return
+		}
+	}
+
+	if longitude := values["location"][0]; longitude != "" {
+		param.Location.Latitude, err = strconv.ParseFloat(longitude, 64)
+		h.logger.Error("failed to parse longitude from query param", err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to parse locatiion from query param"),
+		})
+		return
+
+	}
 
 	for _, file := range form.File["images"] {
 		savePath := filepath.Join("static", "images", file.Filename)
@@ -80,6 +101,51 @@ func (h *hotelHandler) Register(c *gin.Context) {
 	}
 
 	htl, err := h.service.Register(context.Background(), param)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, htl)
+
+}
+func (h *hotelHandler) SearchHotel(c *gin.Context) {
+	var param hotel.SearchHotelParam
+	var err error
+	param.Name = c.Query("name")
+	if rating := c.Query("rating"); rating != "" {
+		param.Rating, err = strconv.ParseFloat(rating, 64)
+		if err != nil {
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusBadRequest,
+				RootError: apperror.ErrBindingQuery,
+			})
+			return
+		}
+	}
+
+	if latitude := c.Query("latitude"); latitude != "" {
+		param.Location.Latitude, err = strconv.ParseFloat(latitude, 64)
+		if err != nil {
+			h.logger.Error("failed to parse latitude from query string", err)
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusBadRequest,
+				RootError: apperror.ErrBindingQuery,
+			})
+			return
+		}
+	}
+	if longitude := c.Query("longitude"); longitude != "" {
+		param.Location.Longitude, err = strconv.ParseFloat(longitude, 64)
+		if err != nil {
+			h.logger.Error("failed to parse longitude from query string", err)
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusBadRequest,
+				RootError: apperror.ErrBindingQuery,
+			})
+			return
+		}
+	}
+	htl, err := h.service.SearchHotels(context.Background(), param)
 	if err != nil {
 		_ = c.Error(err)
 		return

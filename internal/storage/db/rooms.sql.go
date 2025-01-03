@@ -12,28 +12,48 @@ import (
 )
 
 const getRoom = `-- name: GetRoom :one
-select id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at from rooms where id =$1
+select
+r.id, r.room_number, 
+r.hotel_id, r.room_type_id, 
+r.floor, r.status, 
+r.created_at, r.updated_at,
+rt.price
+from rooms r 
+join room_types rt on r.room_type_id=rt.id
+where r.id =$1
 `
 
-func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (Room, error) {
+type GetRoomRow struct {
+	ID         pgtype.UUID
+	RoomNumber int32
+	HotelID    pgtype.UUID
+	RoomTypeID pgtype.UUID
+	Floor      string
+	Status     RoomStatus
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	Price      float64
+}
+
+func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (GetRoomRow, error) {
 	row := q.db.QueryRow(ctx, getRoom, id)
-	var i Room
+	var i GetRoomRow
 	err := row.Scan(
 		&i.ID,
 		&i.RoomNumber,
 		&i.HotelID,
 		&i.RoomTypeID,
-		&i.Price,
 		&i.Floor,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price,
 	)
 	return i, err
 }
 
 const searchRoom = `-- name: SearchRoom :many
-select id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at from rooms 
+select id, room_number, hotel_id, room_type_id, floor, status, created_at, updated_at from rooms 
 where price < $1 
 and hotel_id in (select id from hotels where ST_DWithin(location, ST_GeogPoint($2, $3), 1000))
 and roon_id not in(select id from reservations where from_time between $4 and $5 or to_time between $4 and $5)
@@ -70,7 +90,6 @@ func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room,
 			&i.RoomNumber,
 			&i.HotelID,
 			&i.RoomTypeID,
-			&i.Price,
 			&i.Floor,
 			&i.Status,
 			&i.CreatedAt,
@@ -89,7 +108,7 @@ func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room,
 const updateRoom = `-- name: UpdateRoom :one
 update rooms set status =$1
 where id= $2  
-returning id, room_number, hotel_id, room_type_id, price, floor, status, created_at, updated_at
+returning id, room_number, hotel_id, room_type_id, floor, status, created_at, updated_at
 `
 
 type UpdateRoomParams struct {
@@ -105,7 +124,6 @@ func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, e
 		&i.RoomNumber,
 		&i.HotelID,
 		&i.RoomTypeID,
-		&i.Price,
 		&i.Floor,
 		&i.Status,
 		&i.CreatedAt,

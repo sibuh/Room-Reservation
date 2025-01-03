@@ -9,6 +9,8 @@ import (
 )
 
 type SearchHotelParam struct {
+	Name     string  `json:"name"`
+	Rating   float64 `jsom:"rating"`
 	Location struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
