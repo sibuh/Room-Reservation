@@ -111,7 +111,6 @@ func (h *hotelHandler) Register(c *gin.Context) {
 func (h *hotelHandler) SearchHotel(c *gin.Context) {
 	var param hotel.SearchHotelParam
 	var err error
-	param.Name = c.Query("name")
 	if rating := c.Query("rating"); rating != "" {
 		param.Rating, err = strconv.ParseFloat(rating, 64)
 		if err != nil {
