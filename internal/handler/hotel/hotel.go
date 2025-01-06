@@ -111,39 +111,7 @@ func (h *hotelHandler) Register(c *gin.Context) {
 func (h *hotelHandler) SearchHotel(c *gin.Context) {
 	var param hotel.SearchHotelParam
 	var err error
-	if rating := c.Query("rating"); rating != "" {
-		param.Rating, err = strconv.ParseFloat(rating, 64)
-		if err != nil {
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusBadRequest,
-				RootError: apperror.ErrBindingQuery,
-			})
-			return
-		}
-	}
 
-	if latitude := c.Query("latitude"); latitude != "" {
-		param.Location.Latitude, err = strconv.ParseFloat(latitude, 64)
-		if err != nil {
-			h.logger.Error("failed to parse latitude from query string", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusBadRequest,
-				RootError: apperror.ErrBindingQuery,
-			})
-			return
-		}
-	}
-	if longitude := c.Query("longitude"); longitude != "" {
-		param.Location.Longitude, err = strconv.ParseFloat(longitude, 64)
-		if err != nil {
-			h.logger.Error("failed to parse longitude from query string", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusBadRequest,
-				RootError: apperror.ErrBindingQuery,
-			})
-			return
-		}
-	}
 	htl, err := h.service.SearchHotels(context.Background(), param)
 	if err != nil {
 		_ = c.Error(err)
