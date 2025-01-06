@@ -3,18 +3,16 @@ package hotel
 import (
 	"errors"
 	"reservation/pkg/checkzerouuid"
+	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/google/uuid"
 )
 
 type SearchHotelParam struct {
-	Radius   float64 `json:"radius"`
-	Rating   float64 `jsom:"rating"`
-	Location struct {
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
-	} `json:"location"`
+	Country  string    `json:"country"`
+	FromTime time.Time `json:"from_time"`
+	City     string    `json:"city"`
 }
 
 type RegisterHotelParam struct {

@@ -2,7 +2,6 @@ package hotel
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
@@ -71,21 +70,15 @@ func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
 	}
 	return hotels, nil
 }
-func BuildSearchQuery(searchColumns []string, param SearchHotelParam) string {
+func BuildSearchQuery(tableName string, param SearchHotelParam) string {
 	query := `
-        SELECT DISTINCT *
+        SELECT *
         FROM hotels 
         WHERE TRUE
     `
-	// args := make([]interface{}, 0)
-	if param.Rating != 0 {
-		query = query + fmt.Sprintf("AND rating = %f", param.Rating)
-	}
 
-	if param.Radius == 0 {
-		param.Radius = 1
-		query = query + fmt.Sprintf("AND ST_DWithin(location, ST_MakePoint(%f, %f)::GEOGRAPHY, %f)",
-			param.Location.Latitude, param.Location.Longitude, param.Radius)
+	if param.City != "" {
+
 	}
 	return query
 
