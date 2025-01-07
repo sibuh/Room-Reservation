@@ -2,6 +2,7 @@ package hotel
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
@@ -76,10 +77,11 @@ func BuildSearchQuery(tableName string, param SearchHotelParam) string {
         FROM hotels 
         WHERE TRUE
     `
-
+	var condition string
 	if param.City != "" {
-
+		condition = fmt.Sprintf("AND city =%s", param.City)
 	}
+	query = query + condition
 	return query
 
 }
