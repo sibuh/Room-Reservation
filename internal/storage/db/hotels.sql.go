@@ -13,13 +13,13 @@ import (
 
 const createHotel = `-- name: CreateHotel :one
 insert into hotels(name,owner_id,location,rating,image_urls)values($1,$2,$3,$4,$5)
- returning id, name, owner_id, rating, location, image_urls, status, created_at, updated_at
+ returning id, name, owner_id, rating, country, city, location, image_urls, status, created_at, updated_at
 `
 
 type CreateHotelParams struct {
 	Name      string
 	OwnerID   pgtype.UUID
-	Location  []float64
+	Location  interface{}
 	Rating    float64
 	ImageUrls []string
 }
@@ -38,6 +38,8 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 		&i.Name,
 		&i.OwnerID,
 		&i.Rating,
+		&i.Country,
+		&i.City,
 		&i.Location,
 		&i.ImageUrls,
 		&i.Status,
@@ -48,7 +50,7 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 }
 
 const getHotels = `-- name: GetHotels :many
- select id, name, owner_id, rating, location, image_urls, status, created_at, updated_at from hotels
+select id, name, owner_id, rating, country, city, location, image_urls, status, created_at, updated_at from hotels limit 10
 `
 
 func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
@@ -65,11 +67,103 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 			&i.Name,
 			&i.OwnerID,
 			&i.Rating,
+			&i.Country,
+			&i.City,
 			&i.Location,
 			&i.ImageUrls,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchHotels = `-- name: SearchHotels :many
+ select h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at,r.id, r.room_number, r.hotel_id, r.room_type_id, r.floor, r.status, r.created_at, r.updated_at,rt.id, rt.room_type, rt.price, rt.description, rt.created_at, rt.updated_at, rt.deleted_at from hotels h
+ join rooms r on r.hotel_id=h.id
+ join room_types rt on rt.room_id=r.id 
+ where h.city LIKE $1 or h.country LIKE $1
+ and r.id not in(select id from reservations where from_time between $2 and $3 or to_time between $2 and $3)
+`
+
+type SearchHotelsParams struct {
+	City       string
+	FromTime   pgtype.Timestamptz
+	FromTime_2 pgtype.Timestamptz
+}
+
+type SearchHotelsRow struct {
+	ID          pgtype.UUID
+	Name        string
+	OwnerID     pgtype.UUID
+	Rating      float64
+	Country     string
+	City        string
+	Location    interface{}
+	ImageUrls   []string
+	Status      HotelStatus
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	ID_2        pgtype.UUID
+	RoomNumber  int32
+	HotelID     pgtype.UUID
+	RoomTypeID  pgtype.UUID
+	Floor       string
+	Status_2    RoomStatus
+	CreatedAt_2 pgtype.Timestamptz
+	UpdatedAt_2 pgtype.Timestamptz
+	ID_3        pgtype.UUID
+	RoomType    Roomtype
+	Price       float64
+	Description string
+	CreatedAt_3 pgtype.Timestamptz
+	UpdatedAt_3 pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error) {
+	rows, err := q.db.Query(ctx, searchHotels, arg.City, arg.FromTime, arg.FromTime_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchHotelsRow
+	for rows.Next() {
+		var i SearchHotelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.OwnerID,
+			&i.Rating,
+			&i.Country,
+			&i.City,
+			&i.Location,
+			&i.ImageUrls,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ID_2,
+			&i.RoomNumber,
+			&i.HotelID,
+			&i.RoomTypeID,
+			&i.Floor,
+			&i.Status_2,
+			&i.CreatedAt_2,
+			&i.UpdatedAt_2,
+			&i.ID_3,
+			&i.RoomType,
+			&i.Price,
+			&i.Description,
+			&i.CreatedAt_3,
+			&i.UpdatedAt_3,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

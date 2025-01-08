@@ -18,6 +18,8 @@ import (
 type HotelHandler interface {
 	Register(c *gin.Context)
 	SearchHotel(c *gin.Context)
+	GetHotels(c *gin.Context)
+	GetHotelByName(c *gin.Context)
 }
 type hotelHandler struct {
 	logger  *slog.Logger
@@ -118,5 +120,11 @@ func (h *hotelHandler) SearchHotel(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, htl)
+
+}
+func (h *hotelHandler) GetHotels(c *gin.Context) {
+
+}
+func (h *hotelHandler) GetHotelByName(c *gin.Context) {
 
 }

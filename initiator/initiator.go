@@ -131,6 +131,11 @@ func Initiate() {
 				mw.Authorize(),
 			},
 		},
+		{
+			path:    "/search",
+			method:  http.MethodPost,
+			handler: hotelHandler.SearchHotel,
+		},
 	}
 
 	allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)

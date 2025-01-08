@@ -193,7 +193,9 @@ type Hotel struct {
 	Name      string
 	OwnerID   pgtype.UUID
 	Rating    float64
-	Location  []float64
+	Country   string
+	City      string
+	Location  interface{}
 	ImageUrls []string
 	Status    HotelStatus
 	CreatedAt pgtype.Timestamptz

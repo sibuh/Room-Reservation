@@ -2,7 +2,8 @@ package hotel
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"errors"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
@@ -13,7 +14,7 @@ import (
 
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
-	SearchHotels(ctx context.Context, param SearchHotelParam) (db.Hotel, error)
+	SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error)
 }
 
 type hotelService struct {
@@ -58,9 +59,57 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 	return htl, nil
 
 }
-func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) (db.Hotel, error) {
+func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error) {
+	hotelsWithRoom, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
+		City: param.Place,
+		FromTime: pgtype.Timestamptz{
+			Time:  param.FromTime,
+			Valid: true,
+		},
+		FromTime_2: pgtype.Timestamptz{
+			Time:  param.ToTime,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, &apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound}
+		}
+		return nil, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet,
+		}
+	}
+	var hotelsWithRooms []SearchHotelResponse
+	for _, v := range hotelsWithRoom {
+		hotelsWithRooms = append(hotelsWithRooms, SearchHotelResponse{
+			db.Hotel{
+				ID:        v.ID,
+				Name:      v.Name,
+				Rating:    v.Rating,
+				Country:   v.Country,
+				City:      v.City,
+				Location:  v.Location,
+				ImageUrls: v.ImageUrls,
+			},
+			db.Room{
+				ID:         v.ID_2,
+				RoomNumber: v.RoomNumber,
+				Floor:      v.Floor,
+				Status:     v.Status_2,
+			},
+			db.RoomType{
+				ID:          v.ID_3,
+				RoomType:    v.RoomType,
+				Description: v.Description,
+				Price:       v.Price,
+			},
+		})
+	}
 
-	return db.Hotel{}, nil
+	return hotelsWithRooms, nil
 }
 
 func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
@@ -70,18 +119,4 @@ func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
 		return nil, err
 	}
 	return hotels, nil
-}
-func BuildSearchQuery(tableName string, param SearchHotelParam) string {
-	query := `
-        SELECT *
-        FROM hotels 
-        WHERE TRUE
-    `
-	var condition string
-	if param.City != "" {
-		condition = fmt.Sprintf("AND city =%s", param.City)
-	}
-	query = query + condition
-	return query
-
 }

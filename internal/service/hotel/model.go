@@ -2,6 +2,7 @@ package hotel
 
 import (
 	"errors"
+	"reservation/internal/storage/db"
 	"reservation/pkg/checkzerouuid"
 	"time"
 
@@ -10,9 +11,14 @@ import (
 )
 
 type SearchHotelParam struct {
-	Country  string    `json:"country"`
+	Place    string    `json:"place"`
 	FromTime time.Time `json:"from_time"`
-	City     string    `json:"city"`
+	ToTime   time.Time `json:"to_time"`
+}
+type SearchHotelResponse struct {
+	db.Hotel
+	db.Room
+	db.RoomType
 }
 
 type RegisterHotelParam struct {
