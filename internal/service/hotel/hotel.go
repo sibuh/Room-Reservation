@@ -15,6 +15,7 @@ import (
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
 	SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error)
+	GetHotels(ctx context.Context) ([]db.Hotel, error)
 }
 
 type hotelService struct {

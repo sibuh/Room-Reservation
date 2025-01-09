@@ -123,6 +123,12 @@ func (h *hotelHandler) SearchHotel(c *gin.Context) {
 
 }
 func (h *hotelHandler) GetHotels(c *gin.Context) {
+	hotels, err := h.service.GetHotels(context.Background())
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, hotels)
 
 }
 func (h *hotelHandler) GetHotelByName(c *gin.Context) {
