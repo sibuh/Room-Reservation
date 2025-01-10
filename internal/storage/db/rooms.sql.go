@@ -11,6 +11,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addRoom = `-- name: AddRoom :one
+insert into rooms(room_number,hotel_id,room_type_id,floor)values($1,$2,$3,$4) returning id, room_number, hotel_id, room_type_id, floor, status, created_at, updated_at
+`
+
+type AddRoomParams struct {
+	RoomNumber int32       `json:"room_number"`
+	HotelID    pgtype.UUID `json:"hotel_id"`
+	RoomTypeID pgtype.UUID `json:"room_type_id"`
+	Floor      string      `json:"floor"`
+}
+
+func (q *Queries) AddRoom(ctx context.Context, arg AddRoomParams) (Room, error) {
+	row := q.db.QueryRow(ctx, addRoom,
+		arg.RoomNumber,
+		arg.HotelID,
+		arg.RoomTypeID,
+		arg.Floor,
+	)
+	var i Room
+	err := row.Scan(
+		&i.ID,
+		&i.RoomNumber,
+		&i.HotelID,
+		&i.RoomTypeID,
+		&i.Floor,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRoom = `-- name: GetRoom :one
 select
 r.id, r.room_number, 
@@ -24,15 +56,15 @@ where r.id =$1
 `
 
 type GetRoomRow struct {
-	ID         pgtype.UUID
-	RoomNumber int32
-	HotelID    pgtype.UUID
-	RoomTypeID pgtype.UUID
-	Floor      string
-	Status     RoomStatus
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	Price      float64
+	ID         pgtype.UUID        `json:"id"`
+	RoomNumber int32              `json:"room_number"`
+	HotelID    pgtype.UUID        `json:"hotel_id"`
+	RoomTypeID pgtype.UUID        `json:"room_type_id"`
+	Floor      string             `json:"floor"`
+	Status     RoomStatus         `json:"status"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	Price      float64            `json:"price"`
 }
 
 func (q *Queries) GetRoom(ctx context.Context, id pgtype.UUID) (GetRoomRow, error) {
@@ -61,12 +93,12 @@ and $6 =(select room_type from room_types where id=room_type_id)
 `
 
 type SearchRoomParams struct {
-	Price         float64
-	StGeogpoint   interface{}
-	StGeogpoint_2 interface{}
-	FromTime      pgtype.Timestamptz
-	FromTime_2    pgtype.Timestamptz
-	RoomType      Roomtype
+	Price         float64            `json:"price"`
+	StGeogpoint   interface{}        `json:"st_geogpoint"`
+	StGeogpoint_2 interface{}        `json:"st_geogpoint_2"`
+	FromTime      pgtype.Timestamptz `json:"from_time"`
+	FromTime_2    pgtype.Timestamptz `json:"from_time_2"`
+	RoomType      Roomtype           `json:"room_type"`
 }
 
 func (q *Queries) SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room, error) {
@@ -112,8 +144,8 @@ returning id, room_number, hotel_id, room_type_id, floor, status, created_at, up
 `
 
 type UpdateRoomParams struct {
-	Status RoomStatus
-	ID     pgtype.UUID
+	Status RoomStatus  `json:"status"`
+	ID     pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error) {

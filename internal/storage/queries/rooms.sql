@@ -1,3 +1,6 @@
+-- name: AddRoom :one
+insert into rooms(room_number,hotel_id,room_type_id,floor)values($1,$2,$3,$4) returning *;
+
 -- name: UpdateRoom :one
 update rooms set status =$1
 where id= $2  

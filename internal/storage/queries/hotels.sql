@@ -13,3 +13,6 @@ select * from hotels limit 10;
  where h.city LIKE $1 or h.country LIKE $1
  and r.id not in(select id from reservations where from_time between $2 and $3 or to_time between $2 and $3)
  ;
+
+-- name: GetHotelByName :one 
+ select * from hotels where name=$1;

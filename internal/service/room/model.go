@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	"reservation/internal/storage/db"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -85,4 +86,13 @@ func (sp SearchParam) Validate() error {
 		validation.Field(&sp.FromTime, validation.Required.Error("from_time is required")),
 		validation.Field(&sp.ToTime, validation.Required.Error("to_time is required")),
 	)
+}
+
+type CreateRoomParam struct {
+	RoomTypeParam db.AddRoomTypeParams `json:"room_type_param"`
+	RoomParam     db.AddRoomParams     `json:"room_param"`
+}
+type CreateRoomResponse struct {
+	Room     db.Room     `json:"room"`
+	RoomType db.RoomType `json:"room_type"`
 }

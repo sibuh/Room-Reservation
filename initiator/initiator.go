@@ -81,7 +81,7 @@ func Initiate() {
 
 	//initialize services
 	userService := user.NewUserService(logger, queries, key, duration)
-	roomService := room.NewRoomService(queries, logger, stripeSecretKey)
+	roomService := room.NewRoomService(pool, queries, logger, stripeSecretKey)
 	hotelService := hotel.NewHotelService(queries, logger)
 
 	//initialize middlewares

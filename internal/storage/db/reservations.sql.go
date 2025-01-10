@@ -18,11 +18,11 @@ returning id, room_id, user_id, status, from_time, to_time
 `
 
 type CreateReservationParams struct {
-	RoomID   pgtype.UUID
-	UserID   pgtype.UUID
-	Status   ReservationStatus
-	FromTime pgtype.Timestamptz
-	ToTime   pgtype.Timestamptz
+	RoomID   pgtype.UUID        `json:"room_id"`
+	UserID   pgtype.UUID        `json:"user_id"`
+	Status   ReservationStatus  `json:"status"`
+	FromTime pgtype.Timestamptz `json:"from_time"`
+	ToTime   pgtype.Timestamptz `json:"to_time"`
 }
 
 func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error) {
@@ -81,8 +81,8 @@ update reservations set status=$1 where id =$2 returning id, room_id, user_id, s
 `
 
 type UpdateReservationParams struct {
-	Status ReservationStatus
-	ID     pgtype.UUID
+	Status ReservationStatus `json:"status"`
+	ID     pgtype.UUID       `json:"id"`
 }
 
 func (q *Queries) UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error) {

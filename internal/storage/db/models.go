@@ -31,8 +31,8 @@ func (e *HotelStatus) Scan(src interface{}) error {
 }
 
 type NullHotelStatus struct {
-	HotelStatus HotelStatus
-	Valid       bool // Valid is true if HotelStatus is not NULL
+	HotelStatus HotelStatus `json:"hotel_status"`
+	Valid       bool        `json:"valid"` // Valid is true if HotelStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -74,8 +74,8 @@ func (e *ReservationStatus) Scan(src interface{}) error {
 }
 
 type NullReservationStatus struct {
-	ReservationStatus ReservationStatus
-	Valid             bool // Valid is true if ReservationStatus is not NULL
+	ReservationStatus ReservationStatus `json:"reservation_status"`
+	Valid             bool              `json:"valid"` // Valid is true if ReservationStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -118,8 +118,8 @@ func (e *RoomStatus) Scan(src interface{}) error {
 }
 
 type NullRoomStatus struct {
-	RoomStatus RoomStatus
-	Valid      bool // Valid is true if RoomStatus is not NULL
+	RoomStatus RoomStatus `json:"room_status"`
+	Valid      bool       `json:"valid"` // Valid is true if RoomStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -166,8 +166,8 @@ func (e *Roomtype) Scan(src interface{}) error {
 }
 
 type NullRoomtype struct {
-	Roomtype Roomtype
-	Valid    bool // Valid is true if Roomtype is not NULL
+	Roomtype Roomtype `json:"roomtype"`
+	Valid    bool     `json:"valid"` // Valid is true if Roomtype is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -189,57 +189,58 @@ func (ns NullRoomtype) Value() (driver.Value, error) {
 }
 
 type Hotel struct {
-	ID        pgtype.UUID
-	Name      string
-	OwnerID   pgtype.UUID
-	Rating    float64
-	Country   string
-	City      string
-	Location  interface{}
-	ImageUrls []string
-	Status    HotelStatus
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	OwnerID   pgtype.UUID        `json:"owner_id"`
+	Rating    float64            `json:"rating"`
+	Country   string             `json:"country"`
+	City      string             `json:"city"`
+	Location  interface{}        `json:"location"`
+	ImageUrls []string           `json:"image_urls"`
+	Status    HotelStatus        `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Reservation struct {
-	ID       pgtype.UUID
-	RoomID   pgtype.UUID
-	UserID   pgtype.UUID
-	Status   ReservationStatus
-	FromTime pgtype.Timestamptz
-	ToTime   pgtype.Timestamptz
+	ID       pgtype.UUID        `json:"id"`
+	RoomID   pgtype.UUID        `json:"room_id"`
+	UserID   pgtype.UUID        `json:"user_id"`
+	Status   ReservationStatus  `json:"status"`
+	FromTime pgtype.Timestamptz `json:"from_time"`
+	ToTime   pgtype.Timestamptz `json:"to_time"`
 }
 
 type Room struct {
-	ID         pgtype.UUID
-	RoomNumber int32
-	HotelID    pgtype.UUID
-	RoomTypeID pgtype.UUID
-	Floor      string
-	Status     RoomStatus
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	ID         pgtype.UUID        `json:"id"`
+	RoomNumber int32              `json:"room_number"`
+	HotelID    pgtype.UUID        `json:"hotel_id"`
+	RoomTypeID pgtype.UUID        `json:"room_type_id"`
+	Floor      string             `json:"floor"`
+	Status     RoomStatus         `json:"status"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
 }
 
 type RoomType struct {
-	ID          pgtype.UUID
-	RoomType    Roomtype
-	Price       float64
-	Description string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	DeletedAt   pgtype.Timestamptz
+	ID           pgtype.UUID        `json:"id"`
+	RoomType     Roomtype           `json:"room_type"`
+	Price        float64            `json:"price"`
+	Description  string             `json:"description"`
+	MaxAccupancy int32              `json:"max_accupancy"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
-	ID          pgtype.UUID
-	FirstName   string
-	LastName    string
-	PhoneNumber string
-	Email       string
-	Password    string
-	Username    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID          pgtype.UUID        `json:"id"`
+	FirstName   string             `json:"first_name"`
+	LastName    string             `json:"last_name"`
+	PhoneNumber string             `json:"phone_number"`
+	Email       string             `json:"email"`
+	Password    string             `json:"password"`
+	Username    string             `json:"username"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }

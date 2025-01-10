@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/paymentintent"
 
@@ -35,15 +36,17 @@ const (
 
 type roomService struct {
 	db.Querier
+	*pgxpool.Pool
 	logger          *slog.Logger
 	stripeSecretKey string
 }
 
-func NewRoomService(q db.Querier, logger *slog.Logger, key string) RoomService {
+func NewRoomService(pool *pgxpool.Pool, q db.Querier, logger *slog.Logger, key string) RoomService {
 	return &roomService{
 		Querier:         q,
 		stripeSecretKey: key,
 		logger:          logger,
+		Pool:            pool,
 	}
 }
 
@@ -225,4 +228,55 @@ func (rs *roomService) SearchRoom(ctx context.Context, searchParam SearchParam) 
 	}
 
 	return rooms, nil
+}
+func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (CreateRoomResponse, error) {
+	conn, err := rs.Pool.Acquire(ctx)
+	if err != nil {
+		rs.logger.Error("failed to acquire connection for transaction", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to acquire db connection"),
+		}
+	}
+	defer conn.Release()
+	queries := db.New(conn)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		rs.logger.Error("failed to create tx instance", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to add room"),
+		}
+	}
+
+	qtx := queries.WithTx(tx)
+	roomType, err := qtx.AddRoomType(ctx, db.AddRoomTypeParams{
+		RoomType:     param.RoomTypeParam.RoomType,
+		Price:        param.RoomTypeParam.Price,
+		Description:  param.RoomTypeParam.Description,
+		MaxAccupancy: param.RoomTypeParam.MaxAccupancy,
+	})
+	if err != nil {
+		rs.logger.Error("failed to add room", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToCreate}
+	}
+	room, err := qtx.AddRoom(ctx, db.AddRoomParams{
+		RoomNumber: param.RoomParam.RoomNumber,
+		HotelID:    param.RoomParam.HotelID,
+		RoomTypeID: roomType.ID,
+		Floor:      param.RoomParam.Floor,
+	})
+	if err != nil {
+		rs.logger.Error("failed to add room", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToCreate,
+		}
+	}
+	return CreateRoomResponse{
+		Room:     room,
+		RoomType: roomType,
+	}, nil
 }

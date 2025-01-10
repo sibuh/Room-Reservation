@@ -132,5 +132,11 @@ func (h *hotelHandler) GetHotels(c *gin.Context) {
 
 }
 func (h *hotelHandler) GetHotelByName(c *gin.Context) {
-
+	hotelName := c.Query("hotel_name")
+	hotel, err := h.service.GetHotelByName(context.Background(), hotelName)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, hotel)
 }

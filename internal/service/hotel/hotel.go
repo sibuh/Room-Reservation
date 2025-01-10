@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
@@ -16,6 +17,7 @@ type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
 	SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error)
 	GetHotels(ctx context.Context) ([]db.Hotel, error)
+	GetHotelByName(ctx context.Context, hotelName string) (db.Hotel, error)
 }
 
 type hotelService struct {
@@ -120,4 +122,23 @@ func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {
 		return nil, err
 	}
 	return hotels, nil
+}
+func (h *hotelService) GetHotelByName(ctx context.Context, hotelName string) (db.Hotel, error) {
+	hotel, err := h.Querier.GetHotelByName(ctx, hotelName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			h.logger.Info("the requested hotel not found",
+				fmt.Sprintf("hotelName:%s", hotelName), err)
+			return db.Hotel{}, &apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound}
+		}
+		h.logger.Error("unable to get hotel",
+			fmt.Sprintf("hotelName:%s", hotelName), err)
+			
+		return db.Hotel{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet}
+	}
+	return hotel, nil
 }

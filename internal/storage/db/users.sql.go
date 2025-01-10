@@ -18,12 +18,12 @@ values($1,$2,$3,$4,$5,$6) returning id, first_name, last_name, phone_number, ema
 `
 
 type CreateUserParams struct {
-	FirstName   string
-	LastName    string
-	PhoneNumber string
-	Email       string
-	Password    string
-	Username    string
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	PhoneNumber string `json:"phone_number"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Username    string `json:"username"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {

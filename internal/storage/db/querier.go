@@ -11,9 +11,12 @@ import (
 )
 
 type Querier interface {
+	AddRoom(ctx context.Context, arg AddRoomParams) (Room, error)
+	AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomType, error)
 	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetHotelByName(ctx context.Context, name string) (Hotel, error)
 	GetHotels(ctx context.Context) ([]Hotel, error)
 	GetRoom(ctx context.Context, id pgtype.UUID) (GetRoomRow, error)
 	GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error)
