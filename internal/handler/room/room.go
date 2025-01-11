@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"reservation/internal/apperror"
 	"reservation/internal/service/room"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,11 @@ import (
 
 type RoomHandler interface {
 	Reserve(c *gin.Context)
+	AddRoom(c *gin.Context)
+	UpdateRoom(c *gin.Context)
+	PaymentWebhook(c *gin.Context)
+	GetPublishableKey(c *gin.Context)
+	GetRoomReservations(c *gin.Context)
 }
 
 type roomHandler struct {
@@ -81,4 +87,24 @@ func (rh *roomHandler) GetRoomReservations(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, rvns)
+}
+func (rh *roomHandler) AddRoom(c *gin.Context) {
+	var param room.CreateRoomParam
+
+	if err := c.ShouldBind(&param); err != nil {
+		rh.logger.Info("failed to bind the request", err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		})
+		return
+	}
+
+	res, err := rh.srv.AddRoom(context.Background(), param)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, res)
+
 }

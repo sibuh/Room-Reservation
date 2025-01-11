@@ -40,6 +40,11 @@ type route struct {
 	middlewares []gin.HandlerFunc
 }
 
+var hotelHandler hh.HotelHandler
+var roomHandler rh.RoomHandler
+var userHandler uh.UserHandler
+var mw middleware.Middleware
+
 func Initiate() {
 
 	//initialize viper
@@ -85,58 +90,12 @@ func Initiate() {
 	hotelService := hotel.NewHotelService(queries, logger)
 
 	//initialize middlewares
-	mw := middleware.NewMiddleware(logger, queries, key)
+	mw = middleware.NewMiddleware(logger, queries, key)
 
 	//initialize handlers
-	hotelHandler := hh.NewHotelHandler(logger, hotelService)
-	roomHandler := rh.NewRoomHandler(logger, roomService)
-	userHandler := uh.NewUserHandler(logger, userService)
-
-	//register routes
-
-	userRoutes := []route{
-		{
-			path:    "/signup",
-			method:  http.MethodPost,
-			handler: userHandler.Signup,
-		},
-		{
-			path:        "/login",
-			method:      http.MethodPost,
-			handler:     userHandler.Login,
-			middlewares: []gin.HandlerFunc{},
-		},
-		{
-			path:    "/refresh",
-			method:  http.MethodGet,
-			handler: userHandler.Refresh,
-			middlewares: []gin.HandlerFunc{
-				mw.Authorize(),
-			},
-		},
-	}
-	roomRoutes := []route{
-		{
-			path:    "/reserve",
-			method:  http.MethodPost,
-			handler: roomHandler.Reserve,
-		},
-	}
-	hotelRoutes := []route{
-		{
-			path:    "/register",
-			method:  http.MethodPost,
-			handler: hotelHandler.Register,
-			middlewares: []gin.HandlerFunc{
-				mw.Authorize(),
-			},
-		},
-		{
-			path:    "/search",
-			method:  http.MethodPost,
-			handler: hotelHandler.SearchHotel,
-		},
-	}
+	hotelHandler = hh.NewHotelHandler(logger, hotelService)
+	roomHandler = rh.NewRoomHandler(logger, roomService)
+	userHandler = uh.NewUserHandler(logger, userService)
 
 	allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)
 

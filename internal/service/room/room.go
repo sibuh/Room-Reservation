@@ -24,6 +24,7 @@ type RoomService interface {
 	WebhookAction(ctx context.Context, event stripe.Event) error
 	GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error)
 	SearchRoom(ctx context.Context, searchParam SearchParam) ([]db.Room, error)
+	AddRoom(ctx context.Context, param CreateRoomParam) (CreateRoomResponse, error)
 }
 
 type ReservationStatus string
