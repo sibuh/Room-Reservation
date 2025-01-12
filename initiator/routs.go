@@ -36,6 +36,8 @@ var roomRoutes = []route{
 	},
 }
 
+//register all user related routes
+
 var userRoutes = []route{
 	{
 		path:    "/signup",
@@ -57,6 +59,8 @@ var userRoutes = []route{
 		},
 	},
 }
+
+//register all hotel related routes
 
 var hotelRoutes = []route{
 	{
