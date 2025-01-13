@@ -1,7 +1,6 @@
 package room
 
 import (
-	"errors"
 	"reservation/internal/storage/db"
 	"time"
 
@@ -27,10 +26,14 @@ type Room struct {
 }
 
 type ReserveRoom struct {
-	RoomID   uuid.UUID `json:"room_id"`
-	UserID   uuid.UUID `json:"user_id"`
-	FromTime time.Time `json:"from_time"`
-	ToTime   time.Time `json:"to_time"`
+	RoomID      uuid.UUID `json:"room_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	PhoneNumber string    `json:"phone_number"`
+	Email       string    `json:"email"`
+	FromTime    time.Time `json:"from_time"`
+	ToTime      time.Time `json:"to_time"`
 }
 type UpdateRoom struct {
 	ID     uuid.UUID
@@ -46,18 +49,12 @@ type CheckoutResponse struct {
 func (rr ReserveRoom) Validate() error {
 	return validation.ValidateStruct(
 		&rr,
-		validation.Field(&rr.RoomID, validation.Required.Error("room id is required"),
-			validation.By(func(value interface{}) error {
-				v, ok := value.(uuid.UUID)
-				if !ok {
-					return errors.New("value is not uuid type")
-				}
-				if v == uuid.Nil {
-					return errors.New("room id can not be null")
-				}
-				return nil
-			})),
+		validation.Field(&rr.RoomID, validation.Required.Error("room id is required")),
 		validation.Field(&rr.UserID, validation.Required.Error("user id is required")),
+		validation.Field(&rr.FirstName, validation.Required.Error("fist_name is required")),
+		validation.Field(&rr.LastName, validation.Required.Error("last_name is required")),
+		validation.Field(&rr.PhoneNumber, validation.Required.Error("phone_number is required")),
+		validation.Field(&rr.Email, validation.Required.Error("email is required")),
 		validation.Field(&rr.FromTime, validation.Required.Error("From time is required"),
 			validation.Min(time.Now()).Error("from time can not be past time")),
 	)

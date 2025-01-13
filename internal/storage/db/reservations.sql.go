@@ -12,23 +12,29 @@ import (
 )
 
 const createReservation = `-- name: CreateReservation :one
-insert into reservations (room_id,user_id,status,from_time,to_time)
-values($1,$2,$3,$4,$5) 
-returning id, room_id, user_id, status, from_time, to_time
+insert into reservations (room_id,first_name,last_name,phone_number,email,status,from_time,to_time)
+values($1,$2,$3,$4,$5,$6,$7,$8) 
+returning id, room_id, first_name, last_name, phone_number, email, status, from_time, to_time, created_at, updated_at, deleted_at
 `
 
 type CreateReservationParams struct {
-	RoomID   pgtype.UUID        `json:"room_id"`
-	UserID   pgtype.UUID        `json:"user_id"`
-	Status   ReservationStatus  `json:"status"`
-	FromTime pgtype.Timestamptz `json:"from_time"`
-	ToTime   pgtype.Timestamptz `json:"to_time"`
+	RoomID      pgtype.UUID        `json:"room_id"`
+	FirstName   string             `json:"first_name"`
+	LastName    string             `json:"last_name"`
+	PhoneNumber string             `json:"phone_number"`
+	Email       string             `json:"email"`
+	Status      ReservationStatus  `json:"status"`
+	FromTime    pgtype.Timestamptz `json:"from_time"`
+	ToTime      pgtype.Timestamptz `json:"to_time"`
 }
 
 func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error) {
 	row := q.db.QueryRow(ctx, createReservation,
 		arg.RoomID,
-		arg.UserID,
+		arg.FirstName,
+		arg.LastName,
+		arg.PhoneNumber,
+		arg.Email,
 		arg.Status,
 		arg.FromTime,
 		arg.ToTime,
@@ -37,16 +43,22 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 	err := row.Scan(
 		&i.ID,
 		&i.RoomID,
-		&i.UserID,
+		&i.FirstName,
+		&i.LastName,
+		&i.PhoneNumber,
+		&i.Email,
 		&i.Status,
 		&i.FromTime,
 		&i.ToTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getRoomReservations = `-- name: GetRoomReservations :many
-select id, room_id, user_id, status, from_time, to_time from reservations where room_id =$1 and (from_time > now() or to_time > now())
+select id, room_id, first_name, last_name, phone_number, email, status, from_time, to_time, created_at, updated_at, deleted_at from reservations where room_id =$1 and (from_time > now() or to_time > now())
 `
 
 func (q *Queries) GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error) {
@@ -61,10 +73,16 @@ func (q *Queries) GetRoomReservations(ctx context.Context, roomID pgtype.UUID) (
 		if err := rows.Scan(
 			&i.ID,
 			&i.RoomID,
-			&i.UserID,
+			&i.FirstName,
+			&i.LastName,
+			&i.PhoneNumber,
+			&i.Email,
 			&i.Status,
 			&i.FromTime,
 			&i.ToTime,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -77,7 +95,7 @@ func (q *Queries) GetRoomReservations(ctx context.Context, roomID pgtype.UUID) (
 }
 
 const updateReservation = `-- name: UpdateReservation :one
-update reservations set status=$1 where id =$2 returning id, room_id, user_id, status, from_time, to_time
+update reservations set status=$1 where id =$2 returning id, room_id, first_name, last_name, phone_number, email, status, from_time, to_time, created_at, updated_at, deleted_at
 `
 
 type UpdateReservationParams struct {
@@ -91,10 +109,16 @@ func (q *Queries) UpdateReservation(ctx context.Context, arg UpdateReservationPa
 	err := row.Scan(
 		&i.ID,
 		&i.RoomID,
-		&i.UserID,
+		&i.FirstName,
+		&i.LastName,
+		&i.PhoneNumber,
+		&i.Email,
 		&i.Status,
 		&i.FromTime,
 		&i.ToTime,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

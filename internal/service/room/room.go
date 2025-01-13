@@ -61,11 +61,14 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (stri
 	}
 
 	rvn, err := rs.CreateReservation(ctx, db.CreateReservationParams{
-		RoomID:   pgtype.UUID{Bytes: param.RoomID, Valid: true},
-		UserID:   pgtype.UUID{Bytes: param.UserID, Valid: true},
-		Status:   db.ReservationStatus(StatusPending),
-		FromTime: pgtype.Timestamptz{Time: param.FromTime, Valid: true},
-		ToTime:   pgtype.Timestamptz{Time: param.ToTime, Valid: true},
+		RoomID:      pgtype.UUID{Bytes: param.RoomID, Valid: true},
+		FirstName:   param.FirstName,
+		LastName:    param.LastName,
+		PhoneNumber: param.PhoneNumber,
+		Email:       param.Email,
+		Status:      db.ReservationStatus(StatusPending),
+		FromTime:    pgtype.Timestamptz{Time: param.FromTime, Valid: true},
+		ToTime:      pgtype.Timestamptz{Time: param.ToTime, Valid: true},
 	})
 	if err != nil {
 		rs.logger.Error("failed to create reservation", err)

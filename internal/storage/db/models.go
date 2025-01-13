@@ -203,12 +203,18 @@ type Hotel struct {
 }
 
 type Reservation struct {
-	ID       pgtype.UUID        `json:"id"`
-	RoomID   pgtype.UUID        `json:"room_id"`
-	UserID   pgtype.UUID        `json:"user_id"`
-	Status   ReservationStatus  `json:"status"`
-	FromTime pgtype.Timestamptz `json:"from_time"`
-	ToTime   pgtype.Timestamptz `json:"to_time"`
+	ID          pgtype.UUID        `json:"id"`
+	RoomID      pgtype.UUID        `json:"room_id"`
+	FirstName   string             `json:"first_name"`
+	LastName    string             `json:"last_name"`
+	PhoneNumber string             `json:"phone_number"`
+	Email       string             `json:"email"`
+	Status      ReservationStatus  `json:"status"`
+	FromTime    pgtype.Timestamptz `json:"from_time"`
+	ToTime      pgtype.Timestamptz `json:"to_time"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Room struct {

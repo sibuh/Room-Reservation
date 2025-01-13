@@ -1,6 +1,6 @@
 -- name: CreateReservation :one
-insert into reservations (room_id,user_id,status,from_time,to_time)
-values($1,$2,$3,$4,$5) 
+insert into reservations (room_id,first_name,last_name,phone_number,email,status,from_time,to_time)
+values($1,$2,$3,$4,$5,$6,$7,$8) 
 returning *;
 
 -- name: UpdateReservation :one 
