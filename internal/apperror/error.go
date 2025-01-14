@@ -3,11 +3,12 @@ package apperror
 import "errors"
 
 var (
-	ErrInvalidInput   = errors.New("invalid input")
-	ErrRecordNotFound = errors.New("resource not found")
-	ErrUnableToGet    = errors.New("unable to get")
-	ErrUnableToCreate = errors.New("unable to create")
-	ErrBindingQuery   = errors.New("failed to bind query param")
+	ErrInvalidInput       = errors.New("invalid input")
+	ErrRecordNotFound     = errors.New("resource not found")
+	ErrUnableToGet        = errors.New("unable to get")
+	ErrUnableToCreate     = errors.New("unable to create")
+	ErrBindingQuery       = errors.New("failed to bind query param")
+	ErrBindingRequestBody = errors.New("failed to bind request body")
 )
 
 type AppError struct {

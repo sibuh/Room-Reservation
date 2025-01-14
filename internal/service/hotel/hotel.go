@@ -62,6 +62,8 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 	return htl, nil
 
 }
+
+// TODO:dynamic price calculation must be handled
 func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error) {
 	hotelsWithRoom, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
 		City: param.Place,
@@ -135,7 +137,7 @@ func (h *hotelService) GetHotelByName(ctx context.Context, hotelName string) (db
 		}
 		h.logger.Error("unable to get hotel",
 			fmt.Sprintf("hotelName:%s", hotelName), err)
-			
+
 		return db.Hotel{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
 			RootError: apperror.ErrUnableToGet}

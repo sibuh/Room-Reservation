@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v78"
 
 	"golang.org/x/exp/slog"
 )
@@ -18,8 +17,6 @@ type RoomHandler interface {
 	Reserve(c *gin.Context)
 	AddRoom(c *gin.Context)
 	UpdateRoom(c *gin.Context)
-	PaymentWebhook(c *gin.Context)
-	GetPublishableKey(c *gin.Context)
 	GetRoomReservations(c *gin.Context)
 }
 
@@ -64,19 +61,6 @@ func (r *roomHandler) UpdateRoom(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, room)
-}
-func (rh *roomHandler) PaymentWebhook(c *gin.Context) {
-	var event stripe.Event
-	if err := c.ShouldBindJSON(&event); err != nil {
-		rh.logger.Info("unable to bind event request bosy", err)
-		c.JSON(http.StatusOK, err.Error())
-		return
-	}
-	rh.srv.WebhookAction(context.Background(), event)
-
-}
-func (rh *roomHandler) GetPublishableKey(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"publishableKey": rh.publishableKey})
 }
 
 func (rh *roomHandler) GetRoomReservations(c *gin.Context) {

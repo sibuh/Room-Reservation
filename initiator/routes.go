@@ -25,11 +25,6 @@ var roomRoutes = []route{
 		handler: roomHandler.UpdateRoom,
 	},
 	{
-		path:    "/pkey",
-		method:  http.MethodPost,
-		handler: roomHandler.GetPublishableKey,
-	},
-	{
 		path:    "/reservations",
 		method:  http.MethodPost,
 		handler: roomHandler.GetRoomReservations,
@@ -85,5 +80,23 @@ var hotelRoutes = []route{
 		path:    "/hotels",
 		method:  http.MethodGet,
 		handler: hotelHandler.GetHotels,
+	},
+}
+
+var paymentRoutes = []route{
+	{
+		path:    "/pkey",
+		method:  http.MethodGet,
+		handler: paymentHandler.GetPublishableKey,
+	},
+	{
+		path:    "/webhook",
+		method:  http.MethodPost,
+		handler: paymentHandler.WebHook,
+	},
+	{
+		path:    "/pay",
+		method:  http.MethodPost,
+		handler: paymentHandler.ProcessPayment,
 	},
 }

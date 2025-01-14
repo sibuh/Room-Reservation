@@ -16,6 +16,7 @@ import (
 
 	hh "reservation/internal/handler/hotel"
 	"reservation/internal/handler/middleware"
+	pmt "reservation/internal/handler/payment"
 	rh "reservation/internal/handler/room"
 	uh "reservation/internal/handler/user"
 
@@ -44,6 +45,7 @@ var hotelHandler hh.HotelHandler
 var roomHandler rh.RoomHandler
 var userHandler uh.UserHandler
 var mw middleware.Middleware
+var paymentHandler pmt.PaymentHandler
 
 func Initiate() {
 
