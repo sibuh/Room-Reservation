@@ -59,7 +59,27 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 		}
 	}
 	var rvn db.Reservation
-	count, err := rs.CheckOverlap(context.Background(), db.CheckOverlapParams{
+	conn, err := rs.Pool.Acquire(ctx)
+	if err != nil {
+		rs.logger.Error("failed to acquire connection for transaction", err)
+		return db.Reservation{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to acquire db connection"),
+		}
+	}
+	defer conn.Release()
+	queries := db.New(conn)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		rs.logger.Error("failed to create tx instance", err)
+		return db.Reservation{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to add room"),
+		}
+	}
+
+	qtx := queries.WithTx(tx)
+	count, err := qtx.CheckOverlap(context.Background(), db.CheckOverlapParams{
 		RoomID: pgtype.UUID{
 			Bytes: param.RoomID,
 			Valid: true,
@@ -86,7 +106,7 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			RootError: errors.New("room is already reserved"),
 		}
 	} else {
-		rvn, err = rs.CreateReservation(ctx, db.CreateReservationParams{
+		rvn, err = qtx.CreateReservation(ctx, db.CreateReservationParams{
 			RoomID:      pgtype.UUID{Bytes: param.RoomID, Valid: true},
 			FirstName:   param.FirstName,
 			LastName:    param.LastName,
