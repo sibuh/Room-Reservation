@@ -51,6 +51,7 @@ func NewRoomService(pool *pgxpool.Pool, q db.Querier, logger *slog.Logger, d tim
 }
 
 func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.Reservation, error) {
+	//validate param for reserveRoom request
 	if err := param.Validate(); err != nil {
 
 		return db.Reservation{}, &apperror.AppError{
@@ -79,6 +80,8 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 	}
 
 	qtx := queries.WithTx(tx)
+	//finds room reservation with the given time interval
+	//returns count if reservation exists
 	count, err := qtx.CheckOverlap(context.Background(), db.CheckOverlapParams{
 		RoomID: pgtype.UUID{
 			Bytes: param.RoomID,
@@ -100,6 +103,9 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			RootError: apperror.ErrUnableToGet,
 		}
 	}
+	//check if same room is already reserved by other user at overlapping time interval
+	//if reservation exists the given time interval reservation will fail
+	//else reservation will be created
 	if count > 0 {
 		return db.Reservation{}, &apperror.AppError{
 			ErrorCode: http.StatusBadRequest,
@@ -125,6 +131,7 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 		}
 	}
 
+	//cancell reservation if user does not pay for it after set amount of time
 	time.AfterFunc(rs.cancellationTime, func() {
 		status, err := rs.Querier.GetReservationStatus(context.Background(), rvn.ID)
 		if err != nil {
