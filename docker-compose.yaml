@@ -1,19 +1,23 @@
 version: '3.8'
 services:
-  web:
+  app:
     build: .
     ports:
-      - 8080:8080
+      - 8000:8000
     depends_on:
       - db
   db:
     image: cockroachdb/cockroach
-    restart: always
+    ports:
+     - "26257:26257"
+     - "8080:8080"
+    command: start-single-node --insecure
     environment:
       DB_USER: sibuh
       DB_PASSWORD: sibuh
       DB_NAME: rrooms
     volumes:
       - db-data:/cockroach/cockroach-data
+
 volumes:
   db-data:
