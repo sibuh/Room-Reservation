@@ -21,6 +21,14 @@ type paymentHandler struct {
 	publishableKey string
 }
 
+func NewPaymentHandler(logger *slog.Logger, service payment.PaymentProcessor, pkey string) PaymentHandler {
+	return &paymentHandler{
+		logger:         logger,
+		srv:            service,
+		publishableKey: pkey,
+	}
+}
+
 func (p *paymentHandler) ProcessPayment(c *gin.Context) {
 	var agent = c.Query("agent")
 	var payload db.Reservation

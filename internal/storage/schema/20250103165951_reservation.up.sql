@@ -1,4 +1,4 @@
-create type reservation_status as enum('PENDING','SUCCESSFUL','FAILED');
+create type reservation_status as enum('PENDING','SUCCESSFUL','CANCELLED','FAILED');
 create table reservations (
     id uuid primary key default gen_random_uuid(),
     room_id uuid references rooms(id),

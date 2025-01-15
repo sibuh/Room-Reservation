@@ -21,7 +21,7 @@ import (
 
 type PaymentProcessor interface {
 	ProcessPayment(ctx context.Context, agent string, rvn db.Reservation) (string, error)
-	HandleWebHook(c *gin.Context) error
+	HandleWebHook(c *gin.Context)
 }
 type paymentService struct {
 	logger *slog.Logger
@@ -89,28 +89,23 @@ func (p *paymentService) createStripePaymentIntent(ctx context.Context, rvnID, r
 	return pi.ClientSecret, nil
 }
 
-func (p *paymentService) HandleWebHook(c *gin.Context) error {
+func (p *paymentService) HandleWebHook(c *gin.Context) {
 	switch {
 	case c.Request.Header.Get("Stripe-Signature") != "":
-		payload := make([]byte, 0)
+		buf := make([]byte, 0)
 		sigHeader := c.Request.Header.Get("Stripe-Signature")
-		_, err := c.Request.Body.Read(payload)
+		_, err := c.Request.Body.Read(buf)
 		if err != nil {
 			p.logger.Info("fialed to read stripe webhook payload", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusBadRequest,
-				RootError: apperror.ErrInvalidInput,
-			})
+			return
 		}
-		event, err := webhook.ConstructEvent(payload, sigHeader, "secret")
+
+		event, err := webhook.ConstructEvent(buf, sigHeader, "secret")
 		if err != nil {
 			p.logger.Info("fialed to bind stripe webhook body", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusBadRequest,
-				RootError: apperror.ErrBindingRequestBody,
-			})
+			return
 		}
-		return p.HandleStripeWebHook(context.Background(), event)
+		p.HandleStripeWebHook(context.Background(), event)
 
 	case c.Request.Header.Get("X-Razorpay-Signature") != "":
 		// handle razorpay webhook
@@ -120,21 +115,17 @@ func (p *paymentService) HandleWebHook(c *gin.Context) error {
 
 	}
 
-	return nil
-
 }
-func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.Event) error {
+func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.Event) {
 	switch event.Type {
 	case "payment_intent.succeeded":
 		var paymentIntent stripe.PaymentIntent
 		err := json.Unmarshal(event.Data.Raw, &paymentIntent)
 		if err != nil {
 			p.logger.Error("Error parsing webhook JSON", err)
-			return &apperror.AppError{
-				ErrorCode: http.StatusInternalServerError,
-				RootError: errors.New("failed to unmarshal data"),
-			}
+			return
 		}
+
 		rvn, err := p.UpdateReservation(ctx, db.UpdateReservationParams{
 			Status: db.ReservationStatus(room.StatusSuccessful),
 			ID: pgtype.UUID{
@@ -144,21 +135,17 @@ func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.E
 		})
 		if err != nil {
 			p.logger.Error("failed to update reservation", err, rvn, paymentIntent)
-			return err
 		}
 	case "payment_method.attached":
 		var paymentMethod stripe.PaymentMethod
 		err := json.Unmarshal(event.Data.Raw, &paymentMethod)
 		if err != nil {
 			p.logger.Error("Error parsing webhook JSON", err, paymentMethod)
-			return err
 		}
 
 	default:
 		p.logger.Info("unhandled envet type", event.Type)
-		return nil
 	}
 
-	return nil
 	// TODO: change status of reservation to FAILED
 }

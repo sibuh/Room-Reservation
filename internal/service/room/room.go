@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -29,21 +31,22 @@ const (
 	StatusPending    ReservationStatus = "PENDING"
 	StatusSuccessful ReservationStatus = "SUCCESSFUL"
 	StatusFailed     ReservationStatus = "FAILED"
+	StatusCancelled  ReservationStatus = "CANCELLED"
 )
 
 type roomService struct {
 	db.Querier
 	*pgxpool.Pool
-	logger          *slog.Logger
-	stripeSecretKey string
+	logger           *slog.Logger
+	cancellationTime time.Duration
 }
 
-func NewRoomService(pool *pgxpool.Pool, q db.Querier, logger *slog.Logger, key string) RoomService {
+func NewRoomService(pool *pgxpool.Pool, q db.Querier, logger *slog.Logger, d time.Duration) RoomService {
 	return &roomService{
-		Querier:         q,
-		stripeSecretKey: key,
-		logger:          logger,
-		Pool:            pool,
+		Querier:          q,
+		cancellationTime: d,
+		logger:           logger,
+		Pool:             pool,
 	}
 }
 
@@ -55,28 +58,70 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			RootError: err,
 		}
 	}
-
-	rvn, err := rs.CreateReservation(ctx, db.CreateReservationParams{
-		RoomID:      pgtype.UUID{Bytes: param.RoomID, Valid: true},
-		FirstName:   param.FirstName,
-		LastName:    param.LastName,
-		PhoneNumber: param.PhoneNumber,
-		Email:       param.Email,
-		Status:      db.ReservationStatus(StatusPending),
-		FromTime:    pgtype.Timestamptz{Time: param.FromTime, Valid: true},
-		ToTime:      pgtype.Timestamptz{Time: param.ToTime, Valid: true},
+	var rvn db.Reservation
+	count, err := rs.CheckOverlap(context.Background(), db.CheckOverlapParams{
+		RoomID: pgtype.UUID{
+			Bytes: param.RoomID,
+			Valid: true,
+		},
+		FromTime: pgtype.Timestamptz{
+			Time:  param.FromTime,
+			Valid: true,
+		},
+		FromTime_2: pgtype.Timestamptz{
+			Time:  param.ToTime,
+			Valid: true,
+		},
 	})
 	if err != nil {
-		rs.logger.Error("failed to create reservation", err)
+		rs.logger.Info("failed to check if reservation of same room at overlaping time interval exists", err)
 		return db.Reservation{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
-			RootError: errors.New("failed to make reservation"),
+			RootError: apperror.ErrUnableToGet,
 		}
 	}
-	// secretKey, err := rs.createPaymentIntent(ctx, rvn.ID.String(), param.RoomID.String())
-	// if err != nil {
-	// 	return "", err
-	// }
+	if count > 0 {
+		return db.Reservation{}, &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: errors.New("room is already reserved"),
+		}
+	} else {
+		rvn, err = rs.CreateReservation(ctx, db.CreateReservationParams{
+			RoomID:      pgtype.UUID{Bytes: param.RoomID, Valid: true},
+			FirstName:   param.FirstName,
+			LastName:    param.LastName,
+			PhoneNumber: param.PhoneNumber,
+			Email:       param.Email,
+			Status:      db.ReservationStatus(StatusPending),
+			FromTime:    pgtype.Timestamptz{Time: param.FromTime, Valid: true},
+			ToTime:      pgtype.Timestamptz{Time: param.ToTime, Valid: true},
+		})
+		if err != nil {
+			rs.logger.Error("failed to create reservation", err)
+			return db.Reservation{}, &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: apperror.ErrUnableToCreate,
+			}
+		}
+	}
+
+	time.AfterFunc(rs.cancellationTime, func() {
+		status, err := rs.Querier.GetReservationStatus(context.Background(), rvn.ID)
+		if err != nil {
+			rs.logger.Error(fmt.Sprintf("failed to get status of reservation of id: %s", rvn.ID.String()))
+			return
+		}
+		if status == db.ReservationStatusPENDING {
+			_, err = rs.Querier.UpdateReservation(context.Background(), db.UpdateReservationParams{
+				Status: db.ReservationStatus(StatusCancelled),
+				ID:     rvn.ID,
+			})
+			if err != nil {
+				rs.logger.Error(fmt.Sprintf("failed to cancel reservation of id:%s after %d minutes", rvn.ID.String(), rs.cancellationTime))
+			}
+		}
+
+	})
 	return rvn, nil
 
 }

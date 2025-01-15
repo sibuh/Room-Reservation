@@ -11,6 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkOverlap = `-- name: CheckOverlap :one
+select count(id) from reservations where room_id=$1 
+                                    and (from_time between $2 and $3 or to_time between $2 and $3)
+`
+
+type CheckOverlapParams struct {
+	RoomID     pgtype.UUID        `json:"room_id"`
+	FromTime   pgtype.Timestamptz `json:"from_time"`
+	FromTime_2 pgtype.Timestamptz `json:"from_time_2"`
+}
+
+func (q *Queries) CheckOverlap(ctx context.Context, arg CheckOverlapParams) (int64, error) {
+	row := q.db.QueryRow(ctx, checkOverlap, arg.RoomID, arg.FromTime, arg.FromTime_2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createReservation = `-- name: CreateReservation :one
 insert into reservations (room_id,first_name,last_name,phone_number,email,status,from_time,to_time)
 values($1,$2,$3,$4,$5,$6,$7,$8) 
@@ -55,6 +73,17 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const getReservationStatus = `-- name: GetReservationStatus :one
+select status from reservations where id =$1
+`
+
+func (q *Queries) GetReservationStatus(ctx context.Context, id pgtype.UUID) (ReservationStatus, error) {
+	row := q.db.QueryRow(ctx, getReservationStatus, id)
+	var status ReservationStatus
+	err := row.Scan(&status)
+	return status, err
 }
 
 const getRoomReservations = `-- name: GetRoomReservations :many

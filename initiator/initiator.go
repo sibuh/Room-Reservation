@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"reservation/internal/service/hotel"
+	"reservation/internal/service/payment"
 	"reservation/internal/service/room"
 	"reservation/internal/service/user"
 
@@ -57,7 +58,7 @@ func Initiate() {
 	}
 
 	//create connection to database
-	connString := viper.GetString("db_conn")
+	connString := viper.GetString("db.conn")
 	pool, err := pgxpool.NewWithConfig(context.Background(), CreateDBConfig(connString))
 	if err != nil {
 		log.Fatal("failed to create connection pool", err)
@@ -83,13 +84,15 @@ func Initiate() {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 	key := os.Getenv("TOKEN_KEY")
-	stripeSecretKey := os.Getenv("STRIPE_SECRET_KEY")
-	duration := viper.GetDuration("token_duration")
+	stripePublishableKey := os.Getenv("STRIPE_PUBLISHABLE_KEY")
+	duration := viper.GetDuration("token.expire_after")
+	cancellationTime := viper.GetDuration("reservation.cancellation_time")
 
 	//initialize services
 	userService := user.NewUserService(logger, queries, key, duration)
-	roomService := room.NewRoomService(pool, queries, logger, stripeSecretKey)
+	roomService := room.NewRoomService(pool, queries, logger, cancellationTime)
 	hotelService := hotel.NewHotelService(queries, logger)
+	paymentService := payment.NewPaymentService(logger, queries)
 
 	//initialize middlewares
 	mw = middleware.NewMiddleware(logger, queries, key)
@@ -98,15 +101,24 @@ func Initiate() {
 	hotelHandler = hh.NewHotelHandler(logger, hotelService)
 	roomHandler = rh.NewRoomHandler(logger, roomService)
 	userHandler = uh.NewUserHandler(logger, userService)
+	paymentHandler = pmt.NewPaymentHandler(logger, paymentService, stripePublishableKey)
 
-	allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)
-
+	// allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)
+	allRoutes := [][]route{
+		userRoutes,
+		hotelRoutes,
+		roomRoutes,
+		paymentRoutes,
+	}
 	r := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
 	//register error handler for all routes
 	r.Use(middleware.ErrorHandler())
+	
+	for _, rg := range allRoutes {
+		RegisterRoutes(&r.RouterGroup, rg)
+	}
 
-	RegisterRoutes(&r.RouterGroup, allRoutes)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = ":8080"
