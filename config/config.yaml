@@ -1,5 +1,5 @@
 db:
-  conn: postgresql://root@localhost:26257/reservation?sslmode=disable
+  conn: postgresql://root@db:26257/defaultdb?sslmode=disable
 token:
   expire_after: 1m
 reservation:

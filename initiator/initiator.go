@@ -42,11 +42,11 @@ type route struct {
 	middlewares []gin.HandlerFunc
 }
 
-var hotelHandler hh.HotelHandler
-var roomHandler rh.RoomHandler
-var userHandler uh.UserHandler
-var mw middleware.Middleware
-var paymentHandler pmt.PaymentHandler
+// var hotelHandler hh.HotelHandler
+// var roomHandler rh.RoomHandler
+// var userHandler uh.UserHandler
+// var mw middleware.Middleware
+// var paymentHandler pmt.PaymentHandler
 
 func Initiate() {
 
@@ -61,7 +61,7 @@ func Initiate() {
 	connString := viper.GetString("db.conn")
 	pool, err := pgxpool.NewWithConfig(context.Background(), CreateDBConfig(connString))
 	if err != nil {
-		log.Fatal("failed to create connection pool", err)
+		log.Fatal("failed to create connection pool ", err)
 	}
 
 	conn, err := pool.Acquire(context.Background())
@@ -95,33 +95,25 @@ func Initiate() {
 	paymentService := payment.NewPaymentService(logger, queries)
 
 	//initialize middlewares
-	mw = middleware.NewMiddleware(logger, queries, key)
+	mw := middleware.NewMiddleware(logger, queries, key)
 
 	//initialize handlers
-	hotelHandler = hh.NewHotelHandler(logger, hotelService)
-	roomHandler = rh.NewRoomHandler(logger, roomService)
-	userHandler = uh.NewUserHandler(logger, userService)
-	paymentHandler = pmt.NewPaymentHandler(logger, paymentService, stripePublishableKey)
-
-	// allRoutes := append(userRoutes, append(hotelRoutes, roomRoutes...)...)
-	allRoutes := [][]route{
-		userRoutes,
-		hotelRoutes,
-		roomRoutes,
-		paymentRoutes,
-	}
+	hotelHandler := hh.NewHotelHandler(logger, hotelService)
+	roomHandler := rh.NewRoomHandler(logger, roomService)
+	userHandler := uh.NewUserHandler(logger, userService)
+	paymentHandler := pmt.NewPaymentHandler(logger, paymentService, stripePublishableKey)
 	r := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
 	//register error handler for all routes
 	r.Use(middleware.ErrorHandler())
-	
+	allRoutes := ListRoutes(roomHandler, hotelHandler, userHandler, paymentHandler, mw)
 	for _, rg := range allRoutes {
 		RegisterRoutes(&r.RouterGroup, rg)
 	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = ":8080"
+		port = ":8000"
 	}
 	if err := http.ListenAndServe(port, r); err != nil {
 		log.Fatal(err)
