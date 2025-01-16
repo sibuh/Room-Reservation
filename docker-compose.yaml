@@ -1,4 +1,4 @@
-version: '3.8'
+
 services:
   app:
     build: .
@@ -6,6 +6,8 @@ services:
       - 8000:8000
     depends_on:
       - db
+    networks:
+      - mynet
   db:
     image: cockroachdb/cockroach
     ports:
@@ -17,7 +19,11 @@ services:
       DB_PASSWORD: sibuh
       DB_NAME: rrooms
     volumes:
-      - db-data:/cockroach/cockroach-data
+      - dbvolume:/cockroach/cockroach-data
+    networks:
+      - mynet
 
 volumes:
-  db-data:
+  dbvolume:
+networks:
+  mynet:
