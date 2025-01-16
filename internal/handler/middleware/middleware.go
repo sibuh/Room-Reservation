@@ -71,7 +71,9 @@ func (a *middleware) Authorize() gin.HandlerFunc {
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
-		err := c.Err().(*apperror.AppError)
-		c.JSON(err.ErrorCode, err.RootError)
+		if err := c.Err(); err != nil {
+			happenedError := err.(*apperror.AppError)
+			c.JSON(happenedError.ErrorCode, happenedError.RootError)
+		}
 	}
 }
