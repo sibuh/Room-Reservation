@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
 
@@ -55,7 +56,16 @@ func (h *hotelHandler) Register(c *gin.Context) {
 	}
 	values := form.Value
 	param.Name = values["name"][0]
-	param.OwnerID = uuid.MustParse(values["owner_id"][0])
+	userID, ok := c.Value("user_id").(pgtype.UUID)
+	if !ok {
+		h.logger.Info("could not get owner id from context", errors.New("failed to get owner id from context"))
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		})
+		return
+	}
+	param.OwnerID = uuid.MustParse(userID.String())
 	param.Rating, err = strconv.ParseFloat(values["rating"][0], 64)
 	if err != nil {
 		h.logger.Error("failed to parse string to float64 for rating", err)
