@@ -196,7 +196,7 @@ type Hotel struct {
 	Rating    float64            `json:"rating"`
 	Country   string             `json:"country"`
 	City      string             `json:"city"`
-	Location  interface{}        `json:"location"`
+	Location  []float64          `json:"location"`
 	ImageUrls []string           `json:"image_urls"`
 	Status    HotelStatus        `json:"status"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`

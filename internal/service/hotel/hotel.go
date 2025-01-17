@@ -41,7 +41,9 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 		}
 	}
 	htl, err := h.CreateHotel(ctx, db.CreateHotelParams{
-		Name: param.Name,
+		Name:    param.Name,
+		City:    param.City,
+		Country: param.Country,
 		OwnerID: pgtype.UUID{
 			Bytes: param.OwnerID,
 			Valid: true,
@@ -65,7 +67,7 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 
 // TODO:dynamic price calculation must be handled
 func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error) {
-	hotelsWithRoom, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
+	data, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
 		City: param.Place,
 		FromTime: pgtype.Timestamptz{
 			Time:  param.FromTime,
@@ -87,11 +89,18 @@ func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam)
 			RootError: apperror.ErrUnableToGet,
 		}
 	}
+	if len(data) == 0 {
+		h.logger.Info("could not get hotel", errors.New("no hotel found for your search"))
+		return []SearchHotelResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusNotFound,
+			RootError: errors.New("no hotel found for your search"),
+		}
+	}
 	var hotelsWithRooms []SearchHotelResponse
-	for _, v := range hotelsWithRoom {
+	for _, v := range data {
 		hotelsWithRooms = append(hotelsWithRooms, SearchHotelResponse{
-			db.Hotel{
-				ID:        v.ID,
+			Hotel: db.Hotel{
+				ID:        v.Hid,
 				Name:      v.Name,
 				Rating:    v.Rating,
 				Country:   v.Country,
@@ -99,20 +108,21 @@ func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam)
 				Location:  v.Location,
 				ImageUrls: v.ImageUrls,
 			},
-			db.Room{
-				ID:         v.ID_2,
+			Room: db.Room{
+				ID:         v.Rid,
 				RoomNumber: v.RoomNumber,
 				Floor:      v.Floor,
 				Status:     v.Status_2,
 			},
-			db.RoomType{
-				ID:          v.ID_3,
+			RoomType: db.RoomType{
+				ID:          v.ID,
 				RoomType:    v.RoomType,
 				Description: v.Description,
 				Price:       v.Price,
 			},
 		})
 	}
+	fmt.Println("hotels and rooms:====>", hotelsWithRooms)
 
 	return hotelsWithRooms, nil
 }

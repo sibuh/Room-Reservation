@@ -130,6 +130,13 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			}
 		}
 	}
+	if err := tx.Commit(context.Background()); err != nil {
+		rs.logger.Error("failed to commit reserve room transaction: ", err)
+		return db.Reservation{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to reserve room"),
+		}
+	}
 
 	//cancell reservation if user does not pay for it after set amount of time
 	time.AfterFunc(rs.cancellationTime, func() {
@@ -268,6 +275,13 @@ func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (Crea
 		return CreateRoomResponse{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
 			RootError: apperror.ErrUnableToCreate,
+		}
+	}
+	if err := tx.Commit(context.Background()); err != nil {
+		rs.logger.Error("failed to commit add room transaction", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to commit add room transaction"),
 		}
 	}
 	return CreateRoomResponse{

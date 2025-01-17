@@ -1,6 +1,7 @@
 db:
   conn: postgresql://root@db:26257/defaultdb?sslmode=disable
+  dbname: reservation
 token:
-  expire_after: 1m
+  expire_after: 100m
 reservation:
   cancellation_time: 5m

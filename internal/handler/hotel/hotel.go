@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"reservation/internal/apperror"
@@ -36,15 +35,6 @@ func NewHotelHandler(logger *slog.Logger, svc hotel.HotelService) HotelHandler {
 func (h *hotelHandler) Register(c *gin.Context) {
 	param := hotel.RegisterHotelParam{}
 
-	if err := c.ShouldBind(&param); err != nil {
-		h.logger.Info("failed to bind request body", err)
-		_ = c.Error(&apperror.AppError{
-			ErrorCode: http.StatusBadRequest,
-			RootError: apperror.ErrInvalidInput,
-		})
-		return
-	}
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		h.logger.Info("unable to get image files from form data", err)
@@ -56,6 +46,8 @@ func (h *hotelHandler) Register(c *gin.Context) {
 	}
 	values := form.Value
 	param.Name = values["name"][0]
+	param.City = values["city"][0]
+	param.Country = values["country"][0]
 	userID, ok := c.Value("user_id").(pgtype.UUID)
 	if !ok {
 		h.logger.Info("could not get owner id from context", errors.New("failed to get owner id from context"))
@@ -77,7 +69,7 @@ func (h *hotelHandler) Register(c *gin.Context) {
 	if latitude := values["latitude"][0]; latitude != "" {
 		param.Location.Latitude, err = strconv.ParseFloat(latitude, 64)
 		if err != nil {
-			h.logger.Error("failed to parse latitude from query param", err)
+			h.logger.Error("failed to parse latitude from multipart form", err)
 			_ = c.Error(&apperror.AppError{
 				ErrorCode: http.StatusInternalServerError,
 				RootError: apperror.ErrBindingQuery,
@@ -86,19 +78,21 @@ func (h *hotelHandler) Register(c *gin.Context) {
 		}
 	}
 
-	if longitude := values["location"][0]; longitude != "" {
-		param.Location.Latitude, err = strconv.ParseFloat(longitude, 64)
-		h.logger.Error("failed to parse longitude from query param", err)
-		_ = c.Error(&apperror.AppError{
-			ErrorCode: http.StatusInternalServerError,
-			RootError: errors.New("failed to parse locatiion from query param"),
-		})
-		return
+	if longitude := values["longitude"][0]; longitude != "" {
+		param.Location.Longitude, err = strconv.ParseFloat(longitude, 64)
+		if err != nil {
+			h.logger.Error("failed to parse longitude from multipart form", err)
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to parse longitude from multipart form"),
+			})
+			return
+		}
 
 	}
 
 	for _, file := range form.File["images"] {
-		savePath := filepath.Join("static", "images", file.Filename)
+		savePath := "public/" + file.Filename
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			h.logger.Error("failed to save uploaded file", err)
 			_ = c.Error(&apperror.AppError{

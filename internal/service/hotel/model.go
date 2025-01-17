@@ -16,20 +16,22 @@ type SearchHotelParam struct {
 	ToTime   time.Time `json:"to_time"`
 }
 type SearchHotelResponse struct {
-	db.Hotel
-	db.Room
-	db.RoomType
+	Hotel    db.Hotel    `json:"hotel"`
+	Room     db.Room     `json:"room"`
+	RoomType db.RoomType `json:"room_type"`
 }
 
 type RegisterHotelParam struct {
-	Name      string    `json:"name"`
-	Rating    float64   `json:"rating"`
-	OwnerID   uuid.UUID `json:"owner_id"`
-	ImageURLs []string  `json:"image_url"`
+	Name      string    `form:"name"`
+	City      string    `form:"city"`
+	Country   string    `form:"country"`
+	Rating    float64   `form:"rating"`
+	OwnerID   uuid.UUID `form:"owner_id"`
+	ImageURLs []string  `form:"image_url"`
 	Location  struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
-	} `json:"location"`
+	} `form:"location"`
 }
 
 func ValidateUUID(value interface{}) error {

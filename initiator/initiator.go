@@ -66,17 +66,20 @@ func Initiate() {
 
 	conn, err := pool.Acquire(context.Background())
 	if err != nil {
-		log.Fatal("failed to create connection from pool", err)
+		log.Fatal("failed to acquire connection from pool", err)
 	}
 
 	//create logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{}))
-	_, err = conn.Exec(context.Background(), "create database if not exists reservation")
+
+	//create database
+	_, err = conn.Exec(context.Background(), fmt.Sprintf("create database if not exists %s", viper.GetString("db.dbname")))
 	if err != nil {
 		log.Fatal("failed to create database", err)
 	}
 	//do database migration
 	DoMigration(connString, "internal/storage/schema")
+
 	// initialize storage layer
 	queries := db.New(conn)
 	//load env
@@ -103,9 +106,12 @@ func Initiate() {
 	userHandler := uh.NewUserHandler(logger, userService)
 	paymentHandler := pmt.NewPaymentHandler(logger, paymentService, stripePublishableKey)
 	r := gin.Default()
+	// r.Static("public", "./public")
 	gin.SetMode(gin.ReleaseMode)
+
 	//register error handler for all routes
 	r.Use(middleware.ErrorHandler())
+
 	allRoutes := ListRoutes(roomHandler, hotelHandler, userHandler, paymentHandler, mw)
 	for _, rg := range allRoutes {
 		RegisterRoutes(&r.RouterGroup, rg)
