@@ -12,6 +12,7 @@ import (
 
 type SearchHotelParam struct {
 	Place    string    `json:"place"`
+	Capacity int32     `json:"capacity"`
 	FromTime time.Time `json:"from_time"`
 	ToTime   time.Time `json:"to_time"`
 }

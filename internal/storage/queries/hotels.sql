@@ -7,39 +7,15 @@ insert into hotels(name,city,country,owner_id,location,rating,image_urls)values(
 select * from hotels limit 10;
 
 -- name: SearchHotels :many
-
-with cte as (
-select 
-h.id hid, 
-h.name, 
-h.owner_id, 
-h.rating, 
-h.country, 
-h.city, 
-h.location, 
-h.image_urls, 
-h.status, 
-h.created_at, 
-h.updated_at,
-r.id rid, 
-r.room_number, 
-r.hotel_id, 
-r.room_type_id, 
-r.floor, 
-r.status, 
-r.created_at, 
-r.updated_at from hotels h
- join rooms r on r.hotel_id=h.id 
+select h.* 
+ from hotels h
+ join rooms r on r.hotel_id=h.id
  where h.city LIKE $1 or h.country LIKE $1
+ and h.status = 'VERIFIED'
+ and r.room_type_id in(select id from room_types where capacity >= $2)
  and r.id not in(
-    select id from reservations where from_time between $2 and $3 
-                                                or to_time between $2 and $3
-                                                and reservations.status in ( 'SUCCESSFUL','PENDING'))
-)
-select rt.*,c.* from room_types rt
-join cte c on c.room_type_id=rt.id;
-
-
-
+    select id from reservations where from_time between $3 and $4
+                                                or to_time between $3 and $4
+                                                and reservations.status in ( 'SUCCESSFUL','PENDING'));
 -- name: GetHotelByName :one 
  select * from hotels where name=$1;

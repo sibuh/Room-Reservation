@@ -230,14 +230,14 @@ type Room struct {
 }
 
 type RoomType struct {
-	ID           pgtype.UUID        `json:"id"`
-	RoomType     Roomtype           `json:"room_type"`
-	Price        float64            `json:"price"`
-	Description  string             `json:"description"`
-	MaxAccupancy int32              `json:"max_accupancy"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	ID          pgtype.UUID        `json:"id"`
+	RoomType    Roomtype           `json:"room_type"`
+	Price       float64            `json:"price"`
+	Description string             `json:"description"`
+	Capacity    int32              `json:"capacity"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {

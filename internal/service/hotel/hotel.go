@@ -15,7 +15,7 @@ import (
 
 type HotelService interface {
 	Register(ctx context.Context, param RegisterHotelParam) (db.Hotel, error)
-	SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error)
+	SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error)
 	GetHotels(ctx context.Context) ([]db.Hotel, error)
 	GetHotelByName(ctx context.Context, hotelName string) (db.Hotel, error)
 }
@@ -66,9 +66,10 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 }
 
 // TODO:dynamic price calculation must be handled
-func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]SearchHotelResponse, error) {
+func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error) {
 	data, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
-		City: param.Place,
+		City:     param.Place,
+		Capacity: param.Capacity,
 		FromTime: pgtype.Timestamptz{
 			Time:  param.FromTime,
 			Valid: true,
@@ -91,40 +92,24 @@ func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam)
 	}
 	if len(data) == 0 {
 		h.logger.Info("could not get hotel", errors.New("no hotel found for your search"))
-		return []SearchHotelResponse{}, &apperror.AppError{
+		return nil, &apperror.AppError{
 			ErrorCode: http.StatusNotFound,
 			RootError: errors.New("no hotel found for your search"),
 		}
 	}
-	var hotelsWithRooms []SearchHotelResponse
+	var hotels []db.Hotel
 	for _, v := range data {
-		hotelsWithRooms = append(hotelsWithRooms, SearchHotelResponse{
-			Hotel: db.Hotel{
-				ID:        v.Hid,
-				Name:      v.Name,
-				Rating:    v.Rating,
-				Country:   v.Country,
-				City:      v.City,
-				Location:  v.Location,
-				ImageUrls: v.ImageUrls,
-			},
-			Room: db.Room{
-				ID:         v.Rid,
-				RoomNumber: v.RoomNumber,
-				Floor:      v.Floor,
-				Status:     v.Status_2,
-			},
-			RoomType: db.RoomType{
-				ID:          v.ID,
-				RoomType:    v.RoomType,
-				Description: v.Description,
-				Price:       v.Price,
-			},
+		hotels = append(hotels, db.Hotel{
+			ID:        v.ID,
+			Name:      v.Name,
+			Rating:    v.Rating,
+			Country:   v.Country,
+			City:      v.City,
+			Location:  v.Location,
+			ImageUrls: v.ImageUrls,
 		})
 	}
-	fmt.Println("hotels and rooms:====>", hotelsWithRooms)
-
-	return hotelsWithRooms, nil
+	return hotels, nil
 }
 
 func (h *hotelService) GetHotels(ctx context.Context) ([]db.Hotel, error) {

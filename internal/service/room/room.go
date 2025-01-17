@@ -253,10 +253,10 @@ func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (Crea
 
 	qtx := queries.WithTx(tx)
 	roomType, err := qtx.AddRoomType(ctx, db.AddRoomTypeParams{
-		RoomType:     param.RoomTypeParam.RoomType,
-		Price:        param.RoomTypeParam.Price,
-		Description:  param.RoomTypeParam.Description,
-		MaxAccupancy: param.RoomTypeParam.MaxAccupancy,
+		RoomType:    param.RoomTypeParam.RoomType,
+		Price:       param.RoomTypeParam.Price,
+		Description: param.RoomTypeParam.Description,
+		Capacity:    param.RoomTypeParam.Capacity,
 	})
 	if err != nil {
 		rs.logger.Error("failed to add room", err)

@@ -24,7 +24,7 @@ type Querier interface {
 	GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error)
 	GetUser(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
-	SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error)
+	SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]Hotel, error)
 	SearchRoom(ctx context.Context, arg SearchRoomParams) ([]Room, error)
 	UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error)
 	UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error)

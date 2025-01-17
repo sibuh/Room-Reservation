@@ -10,14 +10,14 @@ import (
 )
 
 const addRoomType = `-- name: AddRoomType :one
-insert into room_types(room_type,price,description,max_accupancy)values($1,$2,$3,$4) returning id, room_type, price, description, max_accupancy, created_at, updated_at, deleted_at
+insert into room_types(room_type,price,description,capacity)values($1,$2,$3,$4) returning id, room_type, price, description, capacity, created_at, updated_at, deleted_at
 `
 
 type AddRoomTypeParams struct {
-	RoomType     Roomtype `json:"room_type"`
-	Price        float64  `json:"price"`
-	Description  string   `json:"description"`
-	MaxAccupancy int32    `json:"max_accupancy"`
+	RoomType    Roomtype `json:"room_type"`
+	Price       float64  `json:"price"`
+	Description string   `json:"description"`
+	Capacity    int32    `json:"capacity"`
 }
 
 func (q *Queries) AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomType, error) {
@@ -25,7 +25,7 @@ func (q *Queries) AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomT
 		arg.RoomType,
 		arg.Price,
 		arg.Description,
-		arg.MaxAccupancy,
+		arg.Capacity,
 	)
 	var i RoomType
 	err := row.Scan(
@@ -33,7 +33,7 @@ func (q *Queries) AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomT
 		&i.RoomType,
 		&i.Price,
 		&i.Description,
-		&i.MaxAccupancy,
+		&i.Capacity,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

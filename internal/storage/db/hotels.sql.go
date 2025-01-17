@@ -113,94 +113,41 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 }
 
 const searchHotels = `-- name: SearchHotels :many
-
-with cte as (
-select 
-h.id hid, 
-h.name, 
-h.owner_id, 
-h.rating, 
-h.country, 
-h.city, 
-h.location, 
-h.image_urls, 
-h.status, 
-h.created_at, 
-h.updated_at,
-r.id rid, 
-r.room_number, 
-r.hotel_id, 
-r.room_type_id, 
-r.floor, 
-r.status, 
-r.created_at, 
-r.updated_at from hotels h
- join rooms r on r.hotel_id=h.id 
+select h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at 
+ from hotels h
+ join rooms r on r.hotel_id=h.id
  where h.city LIKE $1 or h.country LIKE $1
+ and h.status = 'VERIFIED'
+ and r.room_type_id in(select id from room_types where capacity >= $2)
  and r.id not in(
-    select id from reservations where from_time between $2 and $3 
-                                                or to_time between $2 and $3
+    select id from reservations where from_time between $3 and $4
+                                                or to_time between $3 and $4
                                                 and reservations.status in ( 'SUCCESSFUL','PENDING'))
-)
-select rt.id, rt.room_type, rt.price, rt.description, rt.max_accupancy, rt.created_at, rt.updated_at, rt.deleted_at,c.hid, c.name, c.owner_id, c.rating, c.country, c.city, c.location, c.image_urls, c.status, c.created_at, c.updated_at, c.rid, c.room_number, c.hotel_id, c.room_type_id, c.floor, c.status, c.created_at, c.updated_at from room_types rt
-join cte c on c.room_type_id=rt.id
 `
 
 type SearchHotelsParams struct {
 	City       string             `json:"city"`
+	Capacity   int32              `json:"capacity"`
 	FromTime   pgtype.Timestamptz `json:"from_time"`
 	FromTime_2 pgtype.Timestamptz `json:"from_time_2"`
 }
 
-type SearchHotelsRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	RoomType     Roomtype           `json:"room_type"`
-	Price        float64            `json:"price"`
-	Description  string             `json:"description"`
-	MaxAccupancy int32              `json:"max_accupancy"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
-	Hid          pgtype.UUID        `json:"hid"`
-	Name         string             `json:"name"`
-	OwnerID      pgtype.UUID        `json:"owner_id"`
-	Rating       float64            `json:"rating"`
-	Country      string             `json:"country"`
-	City         string             `json:"city"`
-	Location     []float64          `json:"location"`
-	ImageUrls    []string           `json:"image_urls"`
-	Status       HotelStatus        `json:"status"`
-	CreatedAt_2  pgtype.Timestamptz `json:"created_at_2"`
-	UpdatedAt_2  pgtype.Timestamptz `json:"updated_at_2"`
-	Rid          pgtype.UUID        `json:"rid"`
-	RoomNumber   int32              `json:"room_number"`
-	HotelID      pgtype.UUID        `json:"hotel_id"`
-	RoomTypeID   pgtype.UUID        `json:"room_type_id"`
-	Floor        string             `json:"floor"`
-	Status_2     RoomStatus         `json:"status_2"`
-	CreatedAt_3  pgtype.Timestamptz `json:"created_at_3"`
-	UpdatedAt_3  pgtype.Timestamptz `json:"updated_at_3"`
-}
-
-func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error) {
-	rows, err := q.db.Query(ctx, searchHotels, arg.City, arg.FromTime, arg.FromTime_2)
+func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]Hotel, error) {
+	rows, err := q.db.Query(ctx, searchHotels,
+		arg.City,
+		arg.Capacity,
+		arg.FromTime,
+		arg.FromTime_2,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchHotelsRow
+	var items []Hotel
 	for rows.Next() {
-		var i SearchHotelsRow
+		var i Hotel
 		if err := rows.Scan(
 			&i.ID,
-			&i.RoomType,
-			&i.Price,
-			&i.Description,
-			&i.MaxAccupancy,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.Hid,
 			&i.Name,
 			&i.OwnerID,
 			&i.Rating,
@@ -209,16 +156,8 @@ func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]S
 			&i.Location,
 			&i.ImageUrls,
 			&i.Status,
-			&i.CreatedAt_2,
-			&i.UpdatedAt_2,
-			&i.Rid,
-			&i.RoomNumber,
-			&i.HotelID,
-			&i.RoomTypeID,
-			&i.Floor,
-			&i.Status_2,
-			&i.CreatedAt_3,
-			&i.UpdatedAt_3,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
