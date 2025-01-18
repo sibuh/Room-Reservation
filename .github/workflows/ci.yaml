@@ -1,5 +1,14 @@
-name: Go
-on: [push]
+name: Golang CICD
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - staging
+      - production 
+  workflow_dispatch:
 
 jobs:
   build:
