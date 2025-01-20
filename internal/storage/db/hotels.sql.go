@@ -113,12 +113,13 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 }
 
 const searchHotels = `-- name: SearchHotels :many
-select h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at 
+select h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at,MIN(rt.price)::float
  from hotels h
  join rooms r on r.hotel_id=h.id
+ join room_types rt on rt.id=r.room_type_id
  where h.city LIKE $1 or h.country LIKE $1
  and h.status = 'VERIFIED'
- and r.room_type_id in(select id from room_types where capacity >= $2)
+ and rt.capacity>= $2
  and r.id not in(
     select id from reservations where from_time between $3 and $4
                                                 or to_time between $3 and $4
@@ -132,7 +133,22 @@ type SearchHotelsParams struct {
 	FromTime_2 pgtype.Timestamptz `json:"from_time_2"`
 }
 
-func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]Hotel, error) {
+type SearchHotelsRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	OwnerID   pgtype.UUID        `json:"owner_id"`
+	Rating    float64            `json:"rating"`
+	Country   string             `json:"country"`
+	City      string             `json:"city"`
+	Location  []float64          `json:"location"`
+	ImageUrls []string           `json:"image_urls"`
+	Status    HotelStatus        `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Column12  float64            `json:"column_12"`
+}
+
+func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error) {
 	rows, err := q.db.Query(ctx, searchHotels,
 		arg.City,
 		arg.Capacity,
@@ -143,9 +159,9 @@ func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]H
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Hotel
+	var items []SearchHotelsRow
 	for rows.Next() {
-		var i Hotel
+		var i SearchHotelsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -158,6 +174,7 @@ func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]H
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Column12,
 		); err != nil {
 			return nil, err
 		}
