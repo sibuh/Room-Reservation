@@ -10,6 +10,7 @@ import (
 	"reservation/internal/storage/db"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
 )
 
@@ -22,13 +23,15 @@ type HotelService interface {
 
 type hotelService struct {
 	db.Querier
+	*pgxpool.Pool
 	logger *slog.Logger
 }
 
-func NewHotelService(q db.Querier, logger *slog.Logger) HotelService {
+func NewHotelService(q db.Querier, logger *slog.Logger, pool *pgxpool.Pool) HotelService {
 	return &hotelService{
 		Querier: q,
 		logger:  logger,
+		Pool:    pool,
 	}
 }
 
@@ -67,19 +70,29 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 
 // TODO:dynamic price calculation must be handled
 func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error) {
-	data, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
+	conn, err := h.Pool.Acquire(context.Background())
+	if err != nil {
+		return nil, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to acquire connection"),
+		}
+	}
+	defer conn.Conn().Close(ctx)
+
+	data, err := db.SearchHotels(ctx, conn, db.SearchHotelsParams{
 		City:     param.Place,
 		Capacity: param.Capacity,
 		FromTime: pgtype.Timestamptz{
 			Time:  param.FromTime,
 			Valid: true,
 		},
-		FromTime_2: pgtype.Timestamptz{
+		ToTime: pgtype.Timestamptz{
 			Time:  param.ToTime,
 			Valid: true,
-		},
-	})
+		}})
+
 	if err != nil {
+		h.logger.Error("failed to search hotels", err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &apperror.AppError{
 				ErrorCode: http.StatusNotFound,

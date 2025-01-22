@@ -78,7 +78,7 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			RootError: errors.New("failed to add room"),
 		}
 	}
-
+	
 	qtx := queries.WithTx(tx)
 	//finds room reservation with the given time interval
 	//returns count if reservation exists

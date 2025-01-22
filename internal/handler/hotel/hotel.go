@@ -20,6 +20,7 @@ type HotelHandler interface {
 	SearchHotel(c *gin.Context)
 	GetHotels(c *gin.Context)
 	GetHotelByName(c *gin.Context)
+	VerifyHotel(c *gin.Context)
 }
 type hotelHandler struct {
 	logger  *slog.Logger
@@ -143,4 +144,7 @@ func (h *hotelHandler) GetHotelByName(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, hotel)
+}
+func (h *hotelHandler) VerifyHotel(c *gin.Context) {
+	
 }
