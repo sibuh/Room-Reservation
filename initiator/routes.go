@@ -92,6 +92,11 @@ func ListRoutes(
 			method:  http.MethodGet,
 			handler: hh.GetHotels,
 		},
+		{
+			path:    "/hotel",
+			method:  http.MethodPatch,
+			handler: hh.VerifyHotel,
+		},
 	}
 
 	var paymentRoutes = []route{

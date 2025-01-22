@@ -146,5 +146,11 @@ func (h *hotelHandler) GetHotelByName(c *gin.Context) {
 	c.JSON(http.StatusOK, hotel)
 }
 func (h *hotelHandler) VerifyHotel(c *gin.Context) {
-	
+	hotelID := c.Param("hotel_id")
+	hotel, err := h.service.VerifyHotel(context.Background(), hotelID)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, hotel)
 }

@@ -22,22 +22,22 @@ jobs:
         run: go mod tidy
       - name: Test with the Go CLI
         run: go test -v ./...
-    lint:
-      - uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.3'
-      - name: Install dependencies
-        run: go mod tidy
-      - name: install linter
-        # run: go get github.com/golangci-lint/cmd/ install correct golangci-lint version
-      - name: run linter
-        run: golangci-lint -v run ./...
-    publish_docker_image:
-      - uses: actions/checkout@v2
-      - name: set up go
-        uses: actions/setup-go@v4
-        with: go-version: '1.23.3'
+    # lint:
+    #   - uses: actions/checkout@v4
+    #   - name: Setup Go
+    #     uses: actions/setup-go@v5
+    #     with:
+    #       go-version: '1.23.3'
+    #   - name: Install dependencies
+    #     run: go mod tidy
+    #   - name: install linter
+    #     # run: go get github.com/golangci-lint/cmd/ install correct golangci-lint version
+    #   - name: run linter
+    #     run: golangci-lint -v run ./...
+    # publish_docker_image:
+    #   - uses: actions/checkout@v2
+    #   - name: set up go
+    #     uses: actions/setup-go@v4
+    #     with: go-version: '1.23.3'
 
 

@@ -9,6 +9,7 @@ import (
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
@@ -19,6 +20,7 @@ type HotelService interface {
 	SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error)
 	GetHotels(ctx context.Context) ([]db.Hotel, error)
 	GetHotelByName(ctx context.Context, hotelName string) (db.Hotel, error)
+	VerifyHotel(ctx context.Context, ID string) (db.Hotel, error)
 }
 
 type hotelService struct {
@@ -70,23 +72,14 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 
 // TODO:dynamic price calculation must be handled
 func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error) {
-	conn, err := h.Pool.Acquire(context.Background())
-	if err != nil {
-		return nil, &apperror.AppError{
-			ErrorCode: http.StatusInternalServerError,
-			RootError: errors.New("failed to acquire connection"),
-		}
-	}
-	defer conn.Conn().Close(ctx)
-
-	data, err := db.SearchHotels(ctx, conn, db.SearchHotelsParams{
-		City:     param.Place,
+	data, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
+		Country:  param.Place,
 		Capacity: param.Capacity,
 		FromTime: pgtype.Timestamptz{
 			Time:  param.FromTime,
 			Valid: true,
 		},
-		ToTime: pgtype.Timestamptz{
+		FromTime_2: pgtype.Timestamptz{
 			Time:  param.ToTime,
 			Valid: true,
 		}})
@@ -149,6 +142,28 @@ func (h *hotelService) GetHotelByName(ctx context.Context, hotelName string) (db
 		return db.Hotel{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
 			RootError: apperror.ErrUnableToGet}
+	}
+	return hotel, nil
+}
+
+func (h *hotelService) VerifyHotel(ctx context.Context, ID string) (db.Hotel, error) {
+	hotel, err := h.Querier.VerifyHotel(ctx, pgtype.UUID{
+		Bytes: uuid.MustParse(ID),
+		Valid: true,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			h.logger.Info("hotel to be verified not found", err)
+			return db.Hotel{}, &apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound,
+			}
+		}
+		h.logger.Error("failed to get hotel to be verified", err)
+		return db.Hotel{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet,
+		}
 	}
 	return hotel, nil
 }

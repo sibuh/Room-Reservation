@@ -1,34 +1,15 @@
-SELECT 
-    h.id, 
-    h.name, 
-    h.owner_id, 
-    h.rating, 
-    h.country, 
-    h.city, 
-    h.location, 
-    h.image_urls, 
-    h.status, 
-    h.created_at, 
-    h.updated_at, 
-    rt.min_price
+SELECT DISTINCT h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at, rt.capacity
 FROM hotels h
-JOIN rooms r ON r.hotel_id = h.id
-JOIN (
-    SELECT 
-        id, 
-        MIN(price) AS min_price 
-    FROM room_types 
-    GROUP BY id
-) rt ON rt.id = r.room_type_id
-WHERE 
-    (h.city LIKE 'addis ababa' OR h.country LIKE 'addis ababa')
-    AND h.status = 'VERIFIED'
-    AND rt.min_price >= 1
-    AND r.id NOT IN (
-        SELECT id 
-        FROM reservations 
-        WHERE 
-            (from_time BETWEEN '2025-01-22T06:04:48.943836Z' AND '2025-01-23T06:04:48.943836Z' 
-             OR to_time BETWEEN '2025-01-22T06:04:48.943836Z' AND '2025-01-23T06:04:48.943836Z')
-            AND reservations.status IN ('SUCCESSFUL', 'PENDING')
-    );
+JOIN rooms r ON h.id = r.hotel_id
+JOIN room_types rt ON r.room_type_id = rt.id
+LEFT JOIN reservations res 
+    ON r.id = res.room_id
+    AND res.status IN ('PENDING', 'SUCCESSFUL') -- Only consider active reservations
+    AND (
+    
+        (res.from_time BETWEEN '2025-01-23T17:52:13.695542Z' AND '2025-01-22T17:52:13.695542Z') OR (res.to_time BETWEEN '2025-01-23T17:52:13.695542Z' AND '2025-01-22T17:52:13.695542Z') -- Overlapping reservation
+        )
+WHERE h.country = 'addis ababa' OR h.city = 'addis ababa'
+  AND rt.capacity >= 2
+  AND res.id IS NULL -- Room is not reserved in the given time range
+ORDER BY h.name;

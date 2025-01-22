@@ -111,3 +111,103 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 	}
 	return items, nil
 }
+
+const searchHotels = `-- name: SearchHotels :many
+SELECT DISTINCT h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at, rt.price
+FROM hotels h
+JOIN rooms r ON h.id = r.hotel_id
+JOIN room_types rt ON r.room_type_id = rt.id
+LEFT JOIN reservations res 
+    ON r.id = res.room_id
+    AND res.status IN ('PENDING', 'SUCCESSFUL') -- Only consider active reservations
+    AND (
+        (res.from_time BETWEEN $1 AND $2) OR (res.to_time  BETWEEN $1 AND  $2 ) -- Overlapping reservation
+    )
+WHERE h.country = $3 OR h.city = $3
+  AND rt.capacity >= $4
+  AND res.id IS NULL -- Room is not reserved in the given time range
+ORDER BY h.name
+`
+
+type SearchHotelsParams struct {
+	FromTime   pgtype.Timestamptz `json:"from_time"`
+	FromTime_2 pgtype.Timestamptz `json:"from_time_2"`
+	Country    string             `json:"country"`
+	Capacity   int32              `json:"capacity"`
+}
+
+type SearchHotelsRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	OwnerID   pgtype.UUID        `json:"owner_id"`
+	Rating    float64            `json:"rating"`
+	Country   string             `json:"country"`
+	City      string             `json:"city"`
+	Location  []float64          `json:"location"`
+	ImageUrls []string           `json:"image_urls"`
+	Status    HotelStatus        `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Price     float64            `json:"price"`
+}
+
+func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error) {
+	rows, err := q.db.Query(ctx, searchHotels,
+		arg.FromTime,
+		arg.FromTime_2,
+		arg.Country,
+		arg.Capacity,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchHotelsRow
+	for rows.Next() {
+		var i SearchHotelsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.OwnerID,
+			&i.Rating,
+			&i.Country,
+			&i.City,
+			&i.Location,
+			&i.ImageUrls,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Price,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const verifyHotel = `-- name: VerifyHotel :one
+UPDATE hotels SET status='VERIFIED' WHERE id=$1 RETURNING id, name, owner_id, rating, country, city, location, image_urls, status, created_at, updated_at
+`
+
+func (q *Queries) VerifyHotel(ctx context.Context, id pgtype.UUID) (Hotel, error) {
+	row := q.db.QueryRow(ctx, verifyHotel, id)
+	var i Hotel
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OwnerID,
+		&i.Rating,
+		&i.Country,
+		&i.City,
+		&i.Location,
+		&i.ImageUrls,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
