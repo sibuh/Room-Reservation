@@ -93,7 +93,7 @@ func ListRoutes(
 			handler: hh.GetHotels,
 		},
 		{
-			path:    "/hotel",
+			path:    "/hotel/:hotel_id",
 			method:  http.MethodPatch,
 			handler: hh.VerifyHotel,
 		},
