@@ -3,6 +3,7 @@ package room
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -314,26 +315,25 @@ func (rs *roomService) GetHotelRooms(ctx context.Context, hotelID string) ([]Get
 		}
 	}
 	for _, row := range res {
+		var rooms []db.Room
+		if err := json.Unmarshal(row.Rooms, &rooms); err != nil {
+			rs.logger.Error("failed to unmarshal bytes rooms data to []db.Rooms", err)
+			return nil, &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to unmarshal"), //TODO:change error message
+			}
+		}
 		result = append(result, GetHotelRoomsResponse{
-			Room: db.Room{
-				ID:         row.ID,
-				RoomNumber: row.RoomNumber,
-				HotelID:    row.HotelID,
-				Floor:      row.Floor,
-				RoomTypeID: row.RoomTypeID,
-				Status:     row.Status,
-				CreatedAt:  row.CreatedAt,
-				UpdatedAt:  row.UpdatedAt,
-			},
+			Rooms: rooms,
 			RoomType: db.RoomType{
-				ID:          row.ID_2,
+				ID:          row.ID,
 				RoomType:    row.RoomType,
 				Price:       row.Price,
 				Description: row.Description,
 				Capacity:    row.Capacity,
-				CreatedAt:   row.CreatedAt_2,
+				CreatedAt:   row.CreatedAt,
 			},
-			Count: row.Count,
+			Count: row.TotalRooms,
 		})
 	}
 	return result, nil

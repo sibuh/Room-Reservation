@@ -95,7 +95,7 @@ type CreateRoomResponse struct {
 }
 
 type GetHotelRoomsResponse struct {
-	Room     db.Room     `json:"room"`
+	Rooms    []db.Room   `json:"rooms"`
 	RoomType db.RoomType `json:"room_type"`
 	Count    int64       `json:"count"`
 }

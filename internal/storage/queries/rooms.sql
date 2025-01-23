@@ -25,9 +25,20 @@ and roon_id not in(select id from reservations where from_time between $4 and $5
 and $6 =(select room_type from room_types where id=room_type_id);
 
 -- name: GetHotelRooms :many
-SELECT r.*,rt.*,COUNT(r.id) AS count
-FROM rooms r 
-JOIN room_types rt 
-ON r.room_type_id=rt.id
+SELECT 
+    rt.*, 
+    JSON_AGG(r.*) AS rooms, 
+    COUNT(r.id) AS total_rooms
+FROM 
+    room_types rt
+LEFT JOIN 
+    rooms r
+ON 
+    rt.id = r.room_type_id
 WHERE r.hotel_id=$1
-GROUP BY rt.id;
+GROUP BY 
+    rt.id
+ORDER BY 
+    rt.room_type;
+
+

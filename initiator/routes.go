@@ -40,6 +40,11 @@ func ListRoutes(
 			method:  http.MethodPost,
 			handler: rh.GetRoomReservations,
 		},
+		{
+			path:    "/:hotel_id/rooms",
+			method:  http.MethodPost,
+			handler: rh.GetHotelRooms,
+		},
 	}
 
 	//register all user related routes
