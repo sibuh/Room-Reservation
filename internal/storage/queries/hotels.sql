@@ -9,20 +9,21 @@ select * from hotels limit 10;
  select * from hotels where name=$1;
 
 -- name: SearchHotels :many
-SELECT DISTINCT h.*, rt.price
+SELECT DISTINCT h.*, MIN(rt.price) AS min_price
 FROM hotels h
 JOIN rooms r ON h.id = r.hotel_id
 JOIN room_types rt ON r.room_type_id = rt.id
 LEFT JOIN reservations res 
     ON r.id = res.room_id
-    AND res.status IN ('PENDING', 'SUCCESSFUL') -- Only consider active reservations
+    AND res.status IN ('PENDING', 'SUCCESSFUL')
     AND (
-        (res.from_time BETWEEN $1 AND $2) OR (res.to_time  BETWEEN $1 AND  $2 ) -- Overlapping reservation
+        (res.from_time < $2 AND res.to_time > $1)
     )
-WHERE h.country = $3 OR h.city = $3
+WHERE (h.city = $3 OR h.country = $3)
   AND rt.capacity >= $4
-  AND res.id IS NULL -- Room is not reserved in the given time range
+  AND res.id IS NULL
+GROUP BY h.id
 ORDER BY h.name;
- 
+
 -- name: VerifyHotel :one
 UPDATE hotels SET status='VERIFIED' WHERE id=$1 RETURNING *;

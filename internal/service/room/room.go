@@ -23,6 +23,7 @@ type RoomService interface {
 	GetRoomReservations(ctx context.Context, roomID string) ([]db.Reservation, error)
 	SearchRoom(ctx context.Context, searchParam SearchParam) ([]db.Room, error)
 	AddRoom(ctx context.Context, param CreateRoomParam) (CreateRoomResponse, error)
+	GetHotelRooms(ctx context.Context, hotelID string) ([]GetHotelRoomsResponse, error)
 }
 
 type ReservationStatus string
@@ -78,7 +79,7 @@ func (rs *roomService) ReserveRoom(ctx context.Context, param ReserveRoom) (db.R
 			RootError: errors.New("failed to add room"),
 		}
 	}
-	
+
 	qtx := queries.WithTx(tx)
 	//finds room reservation with the given time interval
 	//returns count if reservation exists
@@ -288,4 +289,52 @@ func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (Crea
 		Room:     room,
 		RoomType: roomType,
 	}, nil
+}
+func (rs *roomService) GetHotelRooms(ctx context.Context, hotelID string) ([]GetHotelRoomsResponse, error) {
+	var result = make([]GetHotelRoomsResponse, 0)
+	res, err := rs.Querier.GetHotelRooms(ctx, pgtype.UUID{
+		Bytes: uuid.MustParse(hotelID),
+		Valid: true,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			rs.logger.Info("failed to get rooms related to hotel", err)
+			return nil, &apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound,
+			}
+		}
+
+	}
+	if len(res) == 0 {
+		rs.logger.Info("failed to get rooms related of hotel", err, fmt.Sprintf("hotel id: %s", hotelID))
+		return nil, &apperror.AppError{
+			ErrorCode: http.StatusNotFound,
+			RootError: apperror.ErrRecordNotFound,
+		}
+	}
+	for _, row := range res {
+		result = append(result, GetHotelRoomsResponse{
+			Room: db.Room{
+				ID:         row.ID,
+				RoomNumber: row.RoomNumber,
+				HotelID:    row.HotelID,
+				Floor:      row.Floor,
+				RoomTypeID: row.RoomTypeID,
+				Status:     row.Status,
+				CreatedAt:  row.CreatedAt,
+				UpdatedAt:  row.UpdatedAt,
+			},
+			RoomType: db.RoomType{
+				ID:          row.ID_2,
+				RoomType:    row.RoomType,
+				Price:       row.Price,
+				Description: row.Description,
+				Capacity:    row.Capacity,
+				CreatedAt:   row.CreatedAt_2,
+			},
+			Count: row.Count,
+		})
+	}
+	return result, nil
 }

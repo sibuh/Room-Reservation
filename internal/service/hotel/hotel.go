@@ -73,14 +73,14 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 // TODO:dynamic price calculation must be handled
 func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam) ([]db.Hotel, error) {
 	data, err := h.Querier.SearchHotels(ctx, db.SearchHotelsParams{
-		Country:  param.Place,
+		City:     param.Place,
 		Capacity: param.Capacity,
 		FromTime: pgtype.Timestamptz{
 			Time:  param.FromTime,
 			Valid: true,
 		},
-		FromTime_2: pgtype.Timestamptz{
-			Time:  param.ToTime,
+		ToTime: pgtype.Timestamptz{
+			Time:  param.FromTime,
 			Valid: true,
 		}})
 
@@ -115,6 +115,7 @@ func (h *hotelService) SearchHotels(ctx context.Context, param SearchHotelParam)
 			ImageUrls: v.ImageUrls,
 		})
 	}
+	//return least room price
 	return hotels, nil
 }
 

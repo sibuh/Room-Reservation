@@ -2,6 +2,7 @@ package room
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"reservation/internal/apperror"
@@ -17,6 +18,7 @@ type RoomHandler interface {
 	Reserve(c *gin.Context)
 	AddRoom(c *gin.Context)
 	UpdateRoom(c *gin.Context)
+	GetHotelRooms(c *gin.Context)
 	GetRoomReservations(c *gin.Context)
 }
 
@@ -85,6 +87,24 @@ func (rh *roomHandler) AddRoom(c *gin.Context) {
 	}
 
 	res, err := rh.srv.AddRoom(context.Background(), param)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, res)
+
+}
+func (rh *roomHandler) GetHotelRooms(c *gin.Context) {
+	hotelID := c.Param("hotel_id")
+	if hotelID == "" {
+		rh.logger.Info("failed to get hotel id from param", errors.New("hotel id is empty"))
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		})
+		return
+	}
+	res, err := rh.srv.GetHotelRooms(context.Background(), hotelID)
 	if err != nil {
 		_ = c.Error(err)
 		return

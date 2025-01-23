@@ -118,7 +118,14 @@ func (h *hotelHandler) Register(c *gin.Context) {
 func (h *hotelHandler) SearchHotel(c *gin.Context) {
 	var param hotel.SearchHotelParam
 	var err error
-
+	if err := c.ShouldBind(&param); err != nil {
+		h.logger.Info("failed to bind search hotel params", err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrBindingRequestBody,
+		})
+		return
+	}
 	htl, err := h.service.SearchHotels(context.Background(), param)
 	if err != nil {
 		_ = c.Error(err)

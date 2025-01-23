@@ -43,6 +43,73 @@ func (q *Queries) AddRoom(ctx context.Context, arg AddRoomParams) (Room, error) 
 	return i, err
 }
 
+const getHotelRooms = `-- name: GetHotelRooms :many
+SELECT r.id, r.room_number, r.hotel_id, r.room_type_id, r.floor, r.status, r.created_at, r.updated_at,rt.id, rt.room_type, rt.price, rt.description, rt.capacity, rt.created_at, rt.updated_at, rt.deleted_at,COUNT(r.id) AS count
+FROM rooms r 
+JOIN room_types rt 
+ON r.room_type_id=rt.id
+WHERE r.hotel_id=$1
+GROUP BY rt.id
+`
+
+type GetHotelRoomsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	RoomNumber  int32              `json:"room_number"`
+	HotelID     pgtype.UUID        `json:"hotel_id"`
+	RoomTypeID  pgtype.UUID        `json:"room_type_id"`
+	Floor       string             `json:"floor"`
+	Status      RoomStatus         `json:"status"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID_2        pgtype.UUID        `json:"id_2"`
+	RoomType    Roomtype           `json:"room_type"`
+	Price       float64            `json:"price"`
+	Description string             `json:"description"`
+	Capacity    int32              `json:"capacity"`
+	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
+	UpdatedAt_2 pgtype.Timestamptz `json:"updated_at_2"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+	Count       int64              `json:"count"`
+}
+
+func (q *Queries) GetHotelRooms(ctx context.Context, hotelID pgtype.UUID) ([]GetHotelRoomsRow, error) {
+	rows, err := q.db.Query(ctx, getHotelRooms, hotelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetHotelRoomsRow
+	for rows.Next() {
+		var i GetHotelRoomsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoomNumber,
+			&i.HotelID,
+			&i.RoomTypeID,
+			&i.Floor,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ID_2,
+			&i.RoomType,
+			&i.Price,
+			&i.Description,
+			&i.Capacity,
+			&i.CreatedAt_2,
+			&i.UpdatedAt_2,
+			&i.DeletedAt,
+			&i.Count,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRoom = `-- name: GetRoom :one
 select
 r.id, r.room_number, 

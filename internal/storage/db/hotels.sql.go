@@ -113,27 +113,28 @@ func (q *Queries) GetHotels(ctx context.Context) ([]Hotel, error) {
 }
 
 const searchHotels = `-- name: SearchHotels :many
-SELECT DISTINCT h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at, rt.price
+SELECT DISTINCT h.id, h.name, h.owner_id, h.rating, h.country, h.city, h.location, h.image_urls, h.status, h.created_at, h.updated_at, MIN(rt.price) AS min_price
 FROM hotels h
 JOIN rooms r ON h.id = r.hotel_id
 JOIN room_types rt ON r.room_type_id = rt.id
 LEFT JOIN reservations res 
     ON r.id = res.room_id
-    AND res.status IN ('PENDING', 'SUCCESSFUL') -- Only consider active reservations
+    AND res.status IN ('PENDING', 'SUCCESSFUL')
     AND (
-        (res.from_time BETWEEN $1 AND $2) OR (res.to_time  BETWEEN $1 AND  $2 ) -- Overlapping reservation
+        (res.from_time < $2 AND res.to_time > $1)
     )
-WHERE h.country = $3 OR h.city = $3
+WHERE (h.city = $3 OR h.country = $3)
   AND rt.capacity >= $4
-  AND res.id IS NULL -- Room is not reserved in the given time range
+  AND res.id IS NULL
+GROUP BY h.id
 ORDER BY h.name
 `
 
 type SearchHotelsParams struct {
-	FromTime   pgtype.Timestamptz `json:"from_time"`
-	FromTime_2 pgtype.Timestamptz `json:"from_time_2"`
-	Country    string             `json:"country"`
-	Capacity   int32              `json:"capacity"`
+	ToTime   pgtype.Timestamptz `json:"to_time"`
+	FromTime pgtype.Timestamptz `json:"from_time"`
+	City     string             `json:"city"`
+	Capacity int32              `json:"capacity"`
 }
 
 type SearchHotelsRow struct {
@@ -148,14 +149,14 @@ type SearchHotelsRow struct {
 	Status    HotelStatus        `json:"status"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	Price     float64            `json:"price"`
+	MinPrice  interface{}        `json:"min_price"`
 }
 
 func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error) {
 	rows, err := q.db.Query(ctx, searchHotels,
+		arg.ToTime,
 		arg.FromTime,
-		arg.FromTime_2,
-		arg.Country,
+		arg.City,
 		arg.Capacity,
 	)
 	if err != nil {
@@ -177,7 +178,7 @@ func (q *Queries) SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]S
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Price,
+			&i.MinPrice,
 		); err != nil {
 			return nil, err
 		}
