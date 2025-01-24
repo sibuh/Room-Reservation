@@ -86,8 +86,7 @@ func (sp SearchParam) Validate() error {
 }
 
 type CreateRoomParam struct {
-	RoomTypeParam db.AddRoomTypeParams `json:"room_type_param"`
-	RoomParam     db.AddRoomParams     `json:"room_param"`
+	RoomParam db.AddRoomParams `json:"room_param"`
 }
 type CreateRoomResponse struct {
 	Room     db.Room     `json:"room"`

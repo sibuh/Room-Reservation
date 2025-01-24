@@ -7,26 +7,51 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addRoomType = `-- name: AddRoomType :one
-insert into room_types(room_type,price,description,capacity)values($1,$2,$3,$4) returning id, room_type, price, description, capacity, created_at, updated_at, deleted_at
+const createRoomType = `-- name: CreateRoomType :one
+INSERT INTO 
+room_types (room_type,description,price,capacity) 
+VALUES($1,$2,$3,$4)
+RETURNING id, room_type, price, description, capacity, created_at, updated_at, deleted_at
 `
 
-type AddRoomTypeParams struct {
+type CreateRoomTypeParams struct {
 	RoomType    Roomtype `json:"room_type"`
-	Price       float64  `json:"price"`
 	Description string   `json:"description"`
+	Price       float64  `json:"price"`
 	Capacity    int32    `json:"capacity"`
 }
 
-func (q *Queries) AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomType, error) {
-	row := q.db.QueryRow(ctx, addRoomType,
+func (q *Queries) CreateRoomType(ctx context.Context, arg CreateRoomTypeParams) (RoomType, error) {
+	row := q.db.QueryRow(ctx, createRoomType,
 		arg.RoomType,
-		arg.Price,
 		arg.Description,
+		arg.Price,
 		arg.Capacity,
 	)
+	var i RoomType
+	err := row.Scan(
+		&i.ID,
+		&i.RoomType,
+		&i.Price,
+		&i.Description,
+		&i.Capacity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getRoomType = `-- name: GetRoomType :one
+SELECT id, room_type, price, description, capacity, created_at, updated_at, deleted_at FROM room_types WHERE id=$1
+`
+
+func (q *Queries) GetRoomType(ctx context.Context, id pgtype.UUID) (RoomType, error) {
+	row := q.db.QueryRow(ctx, getRoomType, id)
 	var i RoomType
 	err := row.Scan(
 		&i.ID,

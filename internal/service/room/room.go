@@ -254,22 +254,22 @@ func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (Crea
 	}
 
 	qtx := queries.WithTx(tx)
-	roomType, err := qtx.AddRoomType(ctx, db.AddRoomTypeParams{
-		RoomType:    param.RoomTypeParam.RoomType,
-		Price:       param.RoomTypeParam.Price,
-		Description: param.RoomTypeParam.Description,
-		Capacity:    param.RoomTypeParam.Capacity,
-	})
-	if err != nil {
-		rs.logger.Error("failed to add room", err)
-		return CreateRoomResponse{}, &apperror.AppError{
-			ErrorCode: http.StatusInternalServerError,
-			RootError: apperror.ErrUnableToCreate}
-	}
+	// roomType, err := qtx.AddRoomType(ctx, db.AddRoomTypeParams{
+	// 	RoomType:    param.RoomTypeParam.RoomType,
+	// 	Price:       param.RoomTypeParam.Price,
+	// 	Description: param.RoomTypeParam.Description,
+	// 	Capacity:    param.RoomTypeParam.Capacity,
+	// })
+	// if err != nil {
+	// 	rs.logger.Error("failed to add room", err)
+	// 	return CreateRoomResponse{}, &apperror.AppError{
+	// 		ErrorCode: http.StatusInternalServerError,
+	// 		RootError: apperror.ErrUnableToCreate}
+	// }
 	room, err := qtx.AddRoom(ctx, db.AddRoomParams{
 		RoomNumber: param.RoomParam.RoomNumber,
 		HotelID:    param.RoomParam.HotelID,
-		RoomTypeID: roomType.ID,
+		RoomTypeID: param.RoomParam.RoomTypeID,
 		Floor:      param.RoomParam.Floor,
 	})
 	if err != nil {
@@ -277,6 +277,14 @@ func (rs *roomService) AddRoom(ctx context.Context, param CreateRoomParam) (Crea
 		return CreateRoomResponse{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
 			RootError: apperror.ErrUnableToCreate,
+		}
+	}
+	roomType, err := qtx.GetRoomType(ctx, param.RoomParam.RoomTypeID)
+	if err != nil {
+		rs.logger.Error("failed to get room type after adding room type", err)
+		return CreateRoomResponse{}, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet,
 		}
 	}
 	if err := tx.Commit(context.Background()); err != nil {

@@ -12,7 +12,6 @@ import (
 
 type Querier interface {
 	AddRoom(ctx context.Context, arg AddRoomParams) (Room, error)
-	AddRoomType(ctx context.Context, arg AddRoomTypeParams) (RoomType, error)
 	CheckOverlap(ctx context.Context, arg CheckOverlapParams) (int64, error)
 	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error)
@@ -24,6 +23,7 @@ type Querier interface {
 	GetReservationStatus(ctx context.Context, id pgtype.UUID) (ReservationStatus, error)
 	GetRoom(ctx context.Context, id pgtype.UUID) (GetRoomRow, error)
 	GetRoomReservations(ctx context.Context, roomID pgtype.UUID) ([]Reservation, error)
+	GetRoomType(ctx context.Context, id pgtype.UUID) (RoomType, error)
 	GetUser(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	SearchHotels(ctx context.Context, arg SearchHotelsParams) ([]SearchHotelsRow, error)
