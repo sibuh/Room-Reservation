@@ -39,13 +39,16 @@ func (r *roomHandler) Reserve(c *gin.Context) {
 	req := room.ReserveRoom{}
 	if err := c.ShouldBind(&req); err != nil {
 		r.logger.Info("failed to bind request body", err)
-		c.JSON(http.StatusBadRequest, err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		})
 		return
 	}
 	req.UserID = c.Value("user_id").(uuid.UUID)
 	url, err := r.srv.ReserveRoom(context.Background(), req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, url)
