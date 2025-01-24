@@ -2,8 +2,11 @@
 services:
   app:
     build: .
+    volumes:
+      - .:/app  
     ports:
-      - 8000:8000
+      - "8000:8000"
+    command: ["go", "run", "cmd/main.go"] 
     depends_on:
       db:
         condition: service_healthy
