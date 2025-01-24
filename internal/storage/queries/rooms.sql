@@ -26,18 +26,24 @@ and $6 =(select room_type from room_types where id=room_type_id);
 
 -- name: GetHotelRooms :many
 SELECT 
-    rt.*, 
+    rt.id, 
+    rt.room_type, 
+    rt.price, 
+    rt.capacity, 
+    rt.description,
+    rt.created_at,
     JSON_AGG(r.*) AS rooms, 
     COUNT(r.id) AS total_rooms
 FROM 
     room_types rt
-LEFT JOIN 
+JOIN 
     rooms r
 ON 
     rt.id = r.room_type_id
-WHERE r.hotel_id=$1
+WHERE 
+    r.hotel_id = $1
 GROUP BY 
-    rt.id
+    rt.id, rt.room_type, rt.price, rt.capacity, rt.description,rt.created_at
 ORDER BY 
     rt.room_type;
 

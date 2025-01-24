@@ -6,6 +6,7 @@ import (
 	"reservation/internal/handler/middleware"
 	"reservation/internal/handler/payment"
 	"reservation/internal/handler/room"
+	roomtype "reservation/internal/handler/room_type"
 	"reservation/internal/handler/user"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ func ListRoutes(
 	hh hotel.HotelHandler,
 	uh user.UserHandler,
 	ph payment.PaymentHandler,
+	rth roomtype.RoomTypeHandler,
 	mw middleware.Middleware) [][]route {
 	//register room routes
 
@@ -121,11 +123,22 @@ func ListRoutes(
 			handler: ph.ProcessPayment,
 		},
 	}
+	var roomTypeRoutes = []route{
+		{
+			path:    "/room_type",
+			method:  http.MethodPost,
+			handler: rth.CreateRoomType,
+			//TODO: middleware
+			//this endpoint has to be accessed only by super admin
+			//to add all possible types of room types
+		},
+	}
 	allRoutes := [][]route{
 		userRoutes,
 		hotelRoutes,
 		roomRoutes,
 		paymentRoutes,
+		roomTypeRoutes,
 	}
 
 	return allRoutes

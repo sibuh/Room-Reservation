@@ -45,18 +45,24 @@ func (q *Queries) AddRoom(ctx context.Context, arg AddRoomParams) (Room, error) 
 
 const getHotelRooms = `-- name: GetHotelRooms :many
 SELECT 
-    rt.id, rt.room_type, rt.price, rt.description, rt.capacity, rt.created_at, rt.updated_at, rt.deleted_at, 
+    rt.id, 
+    rt.room_type, 
+    rt.price, 
+    rt.capacity, 
+    rt.description,
+    rt.created_at,
     JSON_AGG(r.*) AS rooms, 
     COUNT(r.id) AS total_rooms
 FROM 
     room_types rt
-LEFT JOIN 
+JOIN 
     rooms r
 ON 
     rt.id = r.room_type_id
-WHERE r.hotel_id=$1
+WHERE 
+    r.hotel_id = $1
 GROUP BY 
-    rt.id
+    rt.id, rt.room_type, rt.price, rt.capacity, rt.description,rt.created_at
 ORDER BY 
     rt.room_type
 `
@@ -65,11 +71,9 @@ type GetHotelRoomsRow struct {
 	ID          pgtype.UUID        `json:"id"`
 	RoomType    Roomtype           `json:"room_type"`
 	Price       float64            `json:"price"`
-	Description string             `json:"description"`
 	Capacity    int32              `json:"capacity"`
+	Description string             `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 	Rooms       []byte             `json:"rooms"`
 	TotalRooms  int64              `json:"total_rooms"`
 }
@@ -87,11 +91,9 @@ func (q *Queries) GetHotelRooms(ctx context.Context, hotelID pgtype.UUID) ([]Get
 			&i.ID,
 			&i.RoomType,
 			&i.Price,
-			&i.Description,
 			&i.Capacity,
+			&i.Description,
 			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
 			&i.Rooms,
 			&i.TotalRooms,
 		); err != nil {

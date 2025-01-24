@@ -13,12 +13,14 @@ import (
 	"reservation/internal/service/hotel"
 	"reservation/internal/service/payment"
 	"reservation/internal/service/room"
+	roomtype "reservation/internal/service/room_type"
 	"reservation/internal/service/user"
 
 	hh "reservation/internal/handler/hotel"
 	"reservation/internal/handler/middleware"
 	pmt "reservation/internal/handler/payment"
 	rh "reservation/internal/handler/room"
+	rth "reservation/internal/handler/room_type"
 	uh "reservation/internal/handler/user"
 
 	"reservation/internal/storage/db"
@@ -96,6 +98,7 @@ func Initiate() {
 	roomService := room.NewRoomService(pool, queries, logger, cancellationTime)
 	hotelService := hotel.NewHotelService(queries, logger, pool)
 	paymentService := payment.NewPaymentService(logger, queries)
+	roomTypeService := roomtype.NewRoomTypeService(logger, queries)
 
 	//initialize middlewares
 	mw := middleware.NewMiddleware(logger, queries, key)
@@ -105,6 +108,7 @@ func Initiate() {
 	roomHandler := rh.NewRoomHandler(logger, roomService)
 	userHandler := uh.NewUserHandler(logger, userService)
 	paymentHandler := pmt.NewPaymentHandler(logger, paymentService, stripePublishableKey)
+	roomTypeHandler := rth.NewRoomTypeHandler(logger, roomTypeService)
 	r := gin.Default()
 	// r.Static("public", "./public")
 	gin.SetMode(gin.ReleaseMode)
@@ -112,7 +116,7 @@ func Initiate() {
 	//register error handler for all routes
 	r.Use(middleware.ErrorHandler())
 
-	allRoutes := ListRoutes(roomHandler, hotelHandler, userHandler, paymentHandler, mw)
+	allRoutes := ListRoutes(roomHandler, hotelHandler, userHandler, paymentHandler, roomTypeHandler, mw)
 	for _, rg := range allRoutes {
 		RegisterRoutes(&r.RouterGroup, rg)
 	}

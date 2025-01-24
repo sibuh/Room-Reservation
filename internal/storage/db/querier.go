@@ -16,6 +16,7 @@ type Querier interface {
 	CheckOverlap(ctx context.Context, arg CheckOverlapParams) (int64, error)
 	CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel, error)
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (Reservation, error)
+	CreateRoomType(ctx context.Context, arg CreateRoomTypeParams) (RoomType, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetHotelByName(ctx context.Context, name string) (Hotel, error)
 	GetHotelRooms(ctx context.Context, hotelID pgtype.UUID) ([]GetHotelRoomsRow, error)
