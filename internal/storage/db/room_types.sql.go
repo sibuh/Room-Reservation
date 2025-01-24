@@ -65,3 +65,36 @@ func (q *Queries) GetRoomType(ctx context.Context, id pgtype.UUID) (RoomType, er
 	)
 	return i, err
 }
+
+const getRoomTypes = `-- name: GetRoomTypes :many
+SELECT id, room_type, price, description, capacity, created_at, updated_at, deleted_at FROM room_types
+`
+
+func (q *Queries) GetRoomTypes(ctx context.Context) ([]RoomType, error) {
+	rows, err := q.db.Query(ctx, getRoomTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RoomType
+	for rows.Next() {
+		var i RoomType
+		if err := rows.Scan(
+			&i.ID,
+			&i.RoomType,
+			&i.Price,
+			&i.Description,
+			&i.Capacity,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -12,6 +12,7 @@ import (
 
 type RoomTypeHandler interface {
 	CreateRoomType(c *gin.Context)
+	GetRoomTypes(c *gin.Context)
 }
 
 type roomType struct {
@@ -41,4 +42,12 @@ func (rt *roomType) CreateRoomType(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+func (rt *roomType) GetRoomTypes(c *gin.Context) {
+	roomTypes, err := rt.svc.GetRoomTypes(context.Background())
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, roomTypes)
 }

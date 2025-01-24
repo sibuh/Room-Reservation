@@ -72,8 +72,8 @@ func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 		if err := c.Err(); err != nil {
-			happenedError := err.(*apperror.AppError)
-			c.JSON(happenedError.ErrorCode, happenedError.RootError)
+			thrownError := err.(*apperror.AppError)
+			c.JSON(thrownError.ErrorCode, thrownError.RootError)
 		}
 	}
 }

@@ -2,6 +2,8 @@ package roomtype
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
@@ -11,6 +13,7 @@ import (
 
 type RoomType interface {
 	CreateRoomType(ctx context.Context, param CreateRoomTypeRequest) (db.RoomType, error)
+	GetRoomTypes(ctx context.Context) ([]db.RoomType, error)
 }
 type roomTypeService struct {
 	logger *slog.Logger
@@ -46,4 +49,23 @@ func (rts *roomTypeService) CreateRoomType(ctx context.Context, param CreateRoom
 		}
 	}
 	return roomType, nil
+}
+
+func (rts *roomTypeService) GetRoomTypes(ctx context.Context) ([]db.RoomType, error) {
+	roomTypes, err := rts.Querier.GetRoomTypes(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			rts.logger.Info("no room type found", err)
+			return nil, &apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound,
+			}
+		}
+		rts.logger.Error("failed to get room types", err)
+		return nil, &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet,
+		}
+	}
+	return roomTypes, nil
 }

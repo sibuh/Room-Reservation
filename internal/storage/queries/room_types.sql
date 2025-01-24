@@ -6,3 +6,6 @@ RETURNING *;
 
 -- name: GetRoomType :one
 SELECT * FROM room_types WHERE id=$1;
+
+-- name: GetRoomTypes :many
+SELECT * FROM room_types;

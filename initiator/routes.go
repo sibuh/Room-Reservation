@@ -44,7 +44,7 @@ func ListRoutes(
 		},
 		{
 			path:    "/:hotel_id/rooms",
-			method:  http.MethodPost,
+			method:  http.MethodGet,
 			handler: rh.GetHotelRooms,
 		},
 	}
@@ -128,6 +128,14 @@ func ListRoutes(
 			path:    "/room_type",
 			method:  http.MethodPost,
 			handler: rth.CreateRoomType,
+			//TODO: middleware
+			//this endpoint has to be accessed only by super admin
+			//to add all possible types of room types
+		},
+		{
+			path:    "/room_types",
+			method:  http.MethodGet,
+			handler: rth.GetRoomTypes,
 			//TODO: middleware
 			//this endpoint has to be accessed only by super admin
 			//to add all possible types of room types

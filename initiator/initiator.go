@@ -112,6 +112,7 @@ func Initiate() {
 	r := gin.Default()
 	// r.Static("public", "./public")
 	gin.SetMode(gin.ReleaseMode)
+	gin.ForceConsoleColor()
 
 	//register error handler for all routes
 	r.Use(middleware.ErrorHandler())
