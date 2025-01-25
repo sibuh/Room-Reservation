@@ -2,7 +2,9 @@ package room
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"reservation/internal/apperror"
@@ -57,12 +59,15 @@ func (r *roomHandler) UpdateRoom(c *gin.Context) {
 	req := room.UpdateRoom{}
 	if err := c.ShouldBind(&req); err != nil {
 		r.logger.Info("failed updated room params", err)
-		c.JSON(http.StatusBadRequest, err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrBindingRequestBody,
+		})
 		return
 	}
 	room, err := r.srv.UpdateRoom(context.Background(), req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, room)
@@ -72,7 +77,19 @@ func (rh *roomHandler) GetRoomReservations(c *gin.Context) {
 	roomID := c.Param("room_id")
 	rvns, err := rh.srv.GetRoomReservations(context.Background(), roomID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		if errors.Is(err, sql.ErrNoRows) {
+			rh.logger.Info("no reservations related to room found", err, fmt.Sprintf("room_id: %s", roomID))
+			_ = c.Error(&apperror.AppError{
+				ErrorCode: http.StatusNotFound,
+				RootError: apperror.ErrRecordNotFound,
+			})
+			return
+		}
+		rh.logger.Error("failed to get reservations related room", fmt.Sprintf("room_id: %s", roomID), err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet,
+		})
 		return
 	}
 	c.JSON(http.StatusOK, rvns)
