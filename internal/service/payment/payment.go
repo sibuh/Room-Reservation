@@ -44,6 +44,7 @@ func (p *paymentService) ProcessPayment(ctx context.Context, agent string, rvn d
 		paymentURL, err = p.createStripePaymentIntent(context.Background(), rvn.ID.String(), rvn.RoomID.String())
 	case "paypal":
 		//process payment with paypal
+		paymentURL, err = p.createPaypalPaymentIntent(context.Background(), rvn.ID.String(), rvn.RoomID.String())
 	case "telebirr":
 		//process payment with telebirr
 	case "chapa":
@@ -87,6 +88,9 @@ func (p *paymentService) createStripePaymentIntent(ctx context.Context, rvnID, r
 	}
 
 	return pi.ClientSecret, nil
+}
+func (p *paymentService) createPaypalPaymentIntent(ctx context.Context, resID, roomID string) (string, error) {
+	return "", nil
 }
 
 func (p *paymentService) HandleWebHook(c *gin.Context) {
