@@ -260,6 +260,20 @@ func (p *paymentService) HandleWebHook(c *gin.Context) {
 	case c.Request.Header.Get("PayPal-Transmission-Sig") != "":
 		//handle paypal webhook
 
+		//TODO: verify webhook
+
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			p.logger.Error("Failed to read paypal webhook request body", err)
+			return
+		}
+
+		var event PaypalWebhookPayload
+		if err := json.Unmarshal(body, &event); err != nil {
+			p.logger.Error("Failed to parse JSON", err)
+			return
+		}
+		p.HandlePaypalWebHook(context.Background(), event)
 	}
 
 }
@@ -345,4 +359,18 @@ func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.E
 	}
 
 	// TODO: change status of reservation to FAILED
+}
+func (p *paymentService) HandlePaypalWebHook(ctx context.Context, event PaypalWebhookPayload) {
+	// Extract metadata from the webhook payload
+	customID := event.Resource.CustomID
+	// status := event.Resource.Status
+
+	// Parse custom_id (metadata)
+	var metadata map[string]string
+	if err := json.Unmarshal([]byte(customID), &metadata); err != nil {
+		p.logger.Error("Failed to parse custom_id:", err)
+		return
+	}
+	//TODO: update reservation status
+
 }

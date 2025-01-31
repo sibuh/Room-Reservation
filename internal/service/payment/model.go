@@ -25,3 +25,12 @@ type CaptureOrderResponse struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
 }
+
+type PaypalWebhookPayload struct {
+	EventType string `json:"event_type"`
+	Resource  struct {
+		ID       string `json:"id"`
+		CustomID string `json:"custom_id"`
+		Status   string `json:"status"`
+	} `json:"resource"`
+}
