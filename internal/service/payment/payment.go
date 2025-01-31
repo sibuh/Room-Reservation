@@ -1,10 +1,14 @@
 package payment
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/service/room"
@@ -23,15 +27,24 @@ type PaymentProcessor interface {
 	ProcessPayment(ctx context.Context, agent string, rvn db.Reservation) (string, error)
 	HandleWebHook(c *gin.Context)
 }
+type PaymentProviderConfig struct {
+	BaseURL      string
+	ReturnURL    string
+	CancelURL    string
+	ClientID     string
+	ClientSecret string
+}
 type paymentService struct {
-	logger *slog.Logger
+	logger       *slog.Logger
+	paypalConfig PaymentProviderConfig
 	db.Querier
 }
 
-func NewPaymentService(logger *slog.Logger, q db.Querier) PaymentProcessor {
+func NewPaymentService(logger *slog.Logger, q db.Querier, config PaymentProviderConfig) PaymentProcessor {
 	return &paymentService{
-		logger:  logger,
-		Querier: q,
+		logger:       logger,
+		Querier:      q,
+		paypalConfig: config,
 	}
 }
 
@@ -89,8 +102,131 @@ func (p *paymentService) createStripePaymentIntent(ctx context.Context, rvnID, r
 
 	return pi.ClientSecret, nil
 }
+
 func (p *paymentService) createPaypalPaymentIntent(ctx context.Context, resID, roomID string) (string, error) {
+
+	room, err := p.Querier.GetRoom(ctx, pgtype.UUID{Bytes: uuid.MustParse(roomID), Valid: true})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			p.logger.Info("room not found", err)
+			return "", &apperror.AppError{ErrorCode: http.StatusNotFound, RootError: apperror.ErrRecordNotFound}
+		}
+		p.logger.Error("failed to get room", err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToGet}
+	}
+
+	accessToken, err := p.getPaypalAccessToken()
+	if err != nil {
+		log.Fatalf("Failed to get access token: %v", err)
+	}
+
+	// Step 2: Create a Payment
+	paymentID, err := p.createPaypalPayment(accessToken, customData{
+		ReservationID: resID,
+		RoomID:        room.ID.String(),
+		Price:         fmt.Sprintf("%0.2f", room.Price),
+	})
+
+	if err != nil {
+		log.Fatalf("Failed to create payment: %v", err)
+	}
+
+	fmt.Println("Payment created with ID:", paymentID)
+
 	return "", nil
+}
+
+func (p *paymentService) getPaypalAccessToken() (string, error) {
+	url := p.paypalConfig.BaseURL + "/v1/oauth2/token"
+	req, err := http.NewRequest("POST", url, bytes.NewBufferString("grant_type=client_credentials"))
+	if err != nil {
+		return "", err
+	}
+
+	req.SetBasicAuth(p.paypalConfig.ClientID, p.paypalConfig.ClientSecret)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var tokenResponse AccessTokenResponse
+	if err := json.Unmarshal(body, &tokenResponse); err != nil {
+		return "", err
+	}
+
+	return tokenResponse.AccessToken, nil
+}
+
+func (p *paymentService) createPaypalPayment(accessToken string, customData customData) (string, error) {
+	url := p.paypalConfig.BaseURL + "/v2/checkout/orders"
+
+	// Define metadata including customer_id
+	metadata := map[string]string{
+		"reservation_id": customData.ReservationID,
+		"room_id":        customData.RoomID,
+	}
+	metadataJSON, _ := json.Marshal(metadata)
+
+	orderRequest := map[string]interface{}{
+		"intent": "CAPTURE",
+		"purchase_units": []map[string]interface{}{
+			{
+				"amount": map[string]string{
+					"currency_code": "USD",
+					"value":         customData.Price,
+				},
+				"description": "Payment for room reservation",
+				"custom_id":   string(metadataJSON), // Include customer_id and other metadata
+			},
+		},
+		"application_context": map[string]string{
+			"return_url": p.paypalConfig.ReturnURL,
+			"cancel_url": p.paypalConfig.CancelURL,
+		},
+	}
+
+	jsonData, err := json.Marshal(orderRequest)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var orderResponse CreateOrderResponse
+	if err := json.Unmarshal(body, &orderResponse); err != nil {
+		return "", err
+	}
+
+	return orderResponse.ID, nil
 }
 
 func (p *paymentService) HandleWebHook(c *gin.Context) {

@@ -88,20 +88,28 @@ func Initiate() {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
-	key := os.Getenv("TOKEN_KEY")
+	token_key := os.Getenv("TOKEN_KEY")
 	stripePublishableKey := os.Getenv("STRIPE_PUBLISHABLE_KEY")
+	paypal_client_id := os.Getenv("PAYPAL_CLIENT_ID")
+	paypal_client_secret := os.Getenv("PAYPAL_CLIENT_SECRET")
 	duration := viper.GetDuration("token.expire_after")
 	cancellationTime := viper.GetDuration("reservation.cancellation_time")
 
 	//initialize services
-	userService := user.NewUserService(logger, queries, key, duration)
+	userService := user.NewUserService(logger, queries, token_key, duration)
 	roomService := room.NewRoomService(pool, queries, logger, cancellationTime)
 	hotelService := hotel.NewHotelService(queries, logger, pool)
-	paymentService := payment.NewPaymentService(logger, queries)
+	paymentService := payment.NewPaymentService(logger, queries, payment.PaymentProviderConfig{
+		BaseURL:      viper.GetString("paypal.base_url"),
+		ReturnURL:    viper.GetString("paypal_return_url"),
+		CancelURL:    viper.GetString("paypal_return_url"),
+		ClientID:     paypal_client_id,
+		ClientSecret: paypal_client_secret,
+	})
 	roomTypeService := roomtype.NewRoomTypeService(logger, queries)
 
 	//initialize middlewares
-	mw := middleware.NewMiddleware(logger, queries, key)
+	mw := middleware.NewMiddleware(logger, queries, token_key)
 
 	//initialize handlers
 	hotelHandler := hh.NewHotelHandler(logger, hotelService)
