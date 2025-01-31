@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 
 type PaymentProcessor interface {
 	ProcessPayment(ctx context.Context, agent string, rvn db.Reservation) (string, error)
+	CapturePaypalPayment(ctx context.Context, orderID string) error
 	HandleWebHook(c *gin.Context)
 }
 type PaymentProviderConfig struct {
@@ -216,7 +218,7 @@ func (p *paymentService) createPaypalPayment(accessToken string, customData cust
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -225,8 +227,13 @@ func (p *paymentService) createPaypalPayment(accessToken string, customData cust
 	if err := json.Unmarshal(body, &orderResponse); err != nil {
 		return "", err
 	}
+	for _, link := range orderResponse.Links {
+		if link.Rel == "approve" {
+			return link.Href, nil
+		}
+	}
 
-	return orderResponse.ID, nil
+	return "", nil
 }
 
 func (p *paymentService) HandleWebHook(c *gin.Context) {
@@ -256,6 +263,56 @@ func (p *paymentService) HandleWebHook(c *gin.Context) {
 	}
 
 }
+func (p *paymentService) CapturePaypalPayment(ctx context.Context, orderID string) error {
+	token, err := p.getPaypalAccessToken()
+	if err != nil {
+		p.logger.Error("failed to get paypal access token", err)
+		return &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrUnableToCreate,
+		}
+	}
+	_, err = p.captureOrderPayment(token, orderID)
+	if err != nil {
+		p.logger.Error("failed to capture paypal payment", err)
+		return &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: apperror.ErrCapturingPayment,
+		}
+	}
+	return nil
+}
+func (p *paymentService) captureOrderPayment(accessToken, orderID string) (CaptureOrderResponse, error) {
+	url := p.paypalConfig.BaseURL + "/v2/checkout/orders/" + orderID + "/capture"
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return CaptureOrderResponse{}, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return CaptureOrderResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return CaptureOrderResponse{}, err
+	}
+
+	var captureResponse CaptureOrderResponse
+	if err := json.Unmarshal(body, &captureResponse); err != nil {
+		return CaptureOrderResponse{}, err
+	}
+
+	return captureResponse, nil
+}
+
 func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.Event) {
 	switch event.Type {
 	case "payment_intent.succeeded":

@@ -9,6 +9,7 @@ var (
 	ErrUnableToCreate     = errors.New("unable to create")
 	ErrBindingQuery       = errors.New("failed to bind query param")
 	ErrBindingRequestBody = errors.New("failed to bind request body")
+	ErrCapturingPayment   = errors.New("failed to capture paypal order payment")
 )
 
 type AppError struct {

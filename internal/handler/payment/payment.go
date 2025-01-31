@@ -46,9 +46,24 @@ func (p *paymentHandler) ProcessPayment(c *gin.Context) {
 	c.JSON(http.StatusOK, paymentURL)
 
 }
+
+// serves stripe publishable key
 func (p *paymentHandler) GetPublishableKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"publishableKey": p.publishableKey})
 }
+
+// handle webhook
 func (p *paymentHandler) WebHook(c *gin.Context) {
 	p.srv.HandleWebHook(c)
+}
+
+// capture payment
+func (p *paymentHandler) CapturePaypalPayment(c *gin.Context) {
+	order_id := c.Query("token")
+	err := p.srv.CapturePaypalPayment(context.Background(), order_id)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, nil)
 }
