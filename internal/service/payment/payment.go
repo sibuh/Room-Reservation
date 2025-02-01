@@ -3,12 +3,15 @@ package payment
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"crypto/x509"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"reservation/internal/apperror"
@@ -35,6 +38,7 @@ type PaymentProviderConfig struct {
 	CancelURL    string
 	ClientID     string
 	ClientSecret string
+	WebHookID    string
 }
 type paymentService struct {
 	logger       *slog.Logger
@@ -157,7 +161,7 @@ func (p *paymentService) getPaypalAccessToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -260,23 +264,94 @@ func (p *paymentService) HandleWebHook(c *gin.Context) {
 	case c.Request.Header.Get("PayPal-Transmission-Sig") != "":
 		//handle paypal webhook
 
-		//TODO: verify webhook
+		// Step 1: Extract headers and payload
+		transmissionID := c.GetHeader("Paypal-Transmission-Id")
+		transmissionTime := c.GetHeader("Paypal-Transmission-Time")
+		transmissionSig := c.GetHeader("Paypal-Transmission-Sig")
+		certURL := c.GetHeader("Paypal-Cert-Url")
 
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			p.logger.Error("Failed to read paypal webhook request body", err)
+			p.logger.Error("failed to read paypal webhook payload", err)
 			return
 		}
 
+		// Step 2: Verify the webhook
+		isValid, err := p.verifyWebhookAPI(transmissionID, transmissionTime, transmissionSig, certURL, body)
+		if err != nil {
+			p.logger.Error("paypal webhook request verification failed", err)
+			return
+		}
+
+		if !isValid {
+			p.logger.Error("paypal webhook request is not valid", errors.New("invalid paypal webhook request"))
+			return
+		}
+
+		// Step 3: Process the webhook payload
 		var event PaypalWebhookPayload
 		if err := json.Unmarshal(body, &event); err != nil {
-			p.logger.Error("Failed to parse JSON", err)
+			p.logger.Error("Failed to unmarshal paypal webhook payload", err)
 			return
 		}
 		p.HandlePaypalWebHook(context.Background(), event)
 	}
 
 }
+func (p *paymentService) verifyWebhookAPI(transmissionID, transmissionTime, transmissionSig, certURL string, body []byte) (bool, error) {
+	/// Step 1: Fetch the PayPal public certificate
+	cert, err := fetchPayPalCertificate(certURL)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch PayPal certificate: %v", err)
+	}
+
+	// Step 2: Decode the signature
+	signature, err := base64.StdEncoding.DecodeString(transmissionSig)
+	if err != nil {
+		return false, fmt.Errorf("failed to decode signature: %v", err)
+	}
+
+	// Step 3: Create the signed data string
+	signedData := fmt.Sprintf("%s|%s|%s|%s", transmissionID, transmissionTime, p.paypalConfig.WebHookID, string(body))
+
+	// Step 4: Hash the signed data
+	hashed := sha256.Sum256([]byte(signedData))
+
+	// Step 5: Verify the signature
+	err = cert.CheckSignature(x509.SHA256WithRSA, hashed[:], signature)
+	if err != nil {
+		return false, fmt.Errorf("signature verification failed: %v", err)
+	}
+
+	return true, nil
+
+}
+func fetchPayPalCertificate(certURL string) (*x509.Certificate, error) {
+	resp, err := http.Get(certURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch certificate: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read certificate body: %v", err)
+	}
+
+	// Decode the PEM-encoded certificate
+	block, _ := pem.Decode(body)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %v", err)
+	}
+
+	return cert, nil
+}
+
 func (p *paymentService) CapturePaypalPayment(ctx context.Context, orderID string) error {
 	token, err := p.getPaypalAccessToken()
 	if err != nil {
@@ -314,7 +389,7 @@ func (p *paymentService) captureOrderPayment(accessToken, orderID string) (Captu
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return CaptureOrderResponse{}, err
 	}

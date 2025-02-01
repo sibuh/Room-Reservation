@@ -1,5 +1,7 @@
 package payment
 
+import "encoding/json"
+
 type AccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -33,4 +35,16 @@ type PaypalWebhookPayload struct {
 		CustomID string `json:"custom_id"`
 		Status   string `json:"status"`
 	} `json:"resource"`
+}
+
+type VerifyWebhookRequest struct {
+	TransmissionID   string          `json:"transmission_id"`
+	TransmissionTime string          `json:"transmission_time"`
+	TransmissionSig  string          `json:"transmission_sig"`
+	CertURL          string          `json:"cert_url"`
+	WebhookID        string          `json:"webhook_id"`
+	WebhookEvent     json.RawMessage `json:"webhook_event"`
+}
+type VerifyWebhookResponse struct {
+	VerificationStatus string `json:"verification_status"`
 }
