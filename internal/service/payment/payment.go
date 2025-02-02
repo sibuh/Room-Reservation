@@ -299,7 +299,7 @@ func (p *paymentService) HandleWebHook(c *gin.Context) {
 
 }
 func (p *paymentService) verifyWebhookAPI(transmissionID, transmissionTime, transmissionSig, certURL string, body []byte) (bool, error) {
-	/// Step 1: Fetch the PayPal public certificate
+	// Step 1: Fetch the PayPal public certificate
 	cert, err := fetchPayPalCertificate(certURL)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch PayPal certificate: %v", err)
@@ -447,5 +447,15 @@ func (p *paymentService) HandlePaypalWebHook(ctx context.Context, event PaypalWe
 		return
 	}
 	//TODO: update reservation status
+	rvn, err := p.UpdateReservation(ctx, db.UpdateReservationParams{
+		Status: db.ReservationStatus(room.StatusSuccessful),
+		ID: pgtype.UUID{
+			Bytes: uuid.MustParse(metadata["id"]),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		p.logger.Error("failed to update reservation", err, rvn, metadata["id"])
+	}
 
 }
