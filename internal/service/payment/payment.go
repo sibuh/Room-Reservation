@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"reservation/internal/apperror"
 	"reservation/internal/service/room"
@@ -127,7 +126,12 @@ func (p *paymentService) createPaypalPaymentIntent(ctx context.Context, resID, r
 
 	accessToken, err := p.getPaypalAccessToken()
 	if err != nil {
-		log.Fatalf("Failed to get access token: %v", err)
+		p.logger.Error("Failed to get paypal access token: %v", err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to get paypal access token"),
+		}
+
 	}
 
 	// Step 2: Create a Payment
@@ -138,12 +142,15 @@ func (p *paymentService) createPaypalPaymentIntent(ctx context.Context, resID, r
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to create payment: %v", err)
+		p.logger.Error("failed to create paypal payment", err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to create paypal payment intent"),
+		}
+
 	}
 
-	fmt.Println("Payment created with ID:", paymentID)
-
-	return "", nil
+	return paymentID, nil
 }
 
 func (p *paymentService) getPaypalAccessToken() (string, error) {
@@ -184,7 +191,11 @@ func (p *paymentService) createPaypalPayment(accessToken string, customData cust
 		"id":      customData.ReservationID,
 		"room_id": customData.RoomID,
 	}
-	metadataJSON, _ := json.Marshal(metadata)
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		p.logger.Error("failed to marshal the metadata to be added in paypal createPayment", err)
+		return "", errors.New("marshal error")
+	}
 
 	orderRequest := map[string]interface{}{
 		"intent": "CAPTURE",
@@ -206,7 +217,11 @@ func (p *paymentService) createPaypalPayment(accessToken string, customData cust
 
 	jsonData, err := json.Marshal(orderRequest)
 	if err != nil {
-		return "", err
+		p.logger.Error("failed to marshal paypal orderRequest", err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("marshal error"),
+		}
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -451,7 +466,7 @@ func (p *paymentService) HandlePaypalWebHook(ctx context.Context, event PaypalWe
 		p.logger.Error("Failed to parse custom_id:", err)
 		return
 	}
-	//TODO: update reservation status
+	// update reservation status
 	rvn, err := p.UpdateReservation(ctx, db.UpdateReservationParams{
 		Status: db.ReservationStatus(room.StatusSuccessful),
 		ID: pgtype.UUID{
