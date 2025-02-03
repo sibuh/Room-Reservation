@@ -94,6 +94,7 @@ func Initiate() {
 	paypal_client_secret := os.Getenv("PAYPAL_CLIENT_SECRET")
 	duration := viper.GetDuration("token.expire_after")
 	cancellationTime := viper.GetDuration("reservation.cancellation_time")
+	stripeSecretKey := os.Getenv("STRIPE_SECRET_KEY")
 
 	//initialize services
 	userService := user.NewUserService(logger, queries, token_key, duration)
@@ -105,6 +106,7 @@ func Initiate() {
 		CancelURL:    viper.GetString("paypal_return_url"),
 		ClientID:     paypal_client_id,
 		ClientSecret: paypal_client_secret,
+		StripeSecret: stripeSecretKey,
 	})
 	roomTypeService := roomtype.NewRoomTypeService(logger, queries)
 

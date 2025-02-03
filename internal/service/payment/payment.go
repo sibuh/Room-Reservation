@@ -39,10 +39,12 @@ type PaymentProviderConfig struct {
 	ClientID     string
 	ClientSecret string
 	WebHookID    string
+	StripeSecret string
 }
 type paymentService struct {
 	logger       *slog.Logger
 	paypalConfig PaymentProviderConfig
+	StripeConfig PaymentProviderConfig
 	db.Querier
 }
 
@@ -92,8 +94,8 @@ func (p *paymentService) createStripePaymentIntent(ctx context.Context, rvnID, r
 			Enabled: stripe.Bool(true),
 		},
 		Metadata: map[string]string{
-			"room_id": roomID,
 			"id":      rvnID,
+			"room_id": roomID,
 		},
 	}
 
@@ -179,8 +181,8 @@ func (p *paymentService) createPaypalPayment(accessToken string, customData cust
 
 	// Define metadata including customer_id
 	metadata := map[string]string{
-		"reservation_id": customData.ReservationID,
-		"room_id":        customData.RoomID,
+		"id":      customData.ReservationID,
+		"room_id": customData.RoomID,
 	}
 	metadataJSON, _ := json.Marshal(metadata)
 
@@ -251,7 +253,7 @@ func (p *paymentService) HandleWebHook(c *gin.Context) {
 			return
 		}
 
-		event, err := webhook.ConstructEvent(buf, sigHeader, "secret")
+		event, err := webhook.ConstructEvent(buf, sigHeader, p.StripeConfig.StripeSecret)
 		if err != nil {
 			p.logger.Info("fialed to bind stripe webhook body", err)
 			return
@@ -326,6 +328,7 @@ func (p *paymentService) verifyWebhookAPI(transmissionID, transmissionTime, tran
 	return true, nil
 
 }
+
 func fetchPayPalCertificate(certURL string) (*x509.Certificate, error) {
 	resp, err := http.Get(certURL)
 	if err != nil {
@@ -371,6 +374,7 @@ func (p *paymentService) CapturePaypalPayment(ctx context.Context, orderID strin
 	}
 	return nil
 }
+
 func (p *paymentService) captureOrderPayment(accessToken, orderID string) (CaptureOrderResponse, error) {
 	url := p.paypalConfig.BaseURL + "/v2/checkout/orders/" + orderID + "/capture"
 
@@ -408,7 +412,7 @@ func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.E
 		var paymentIntent stripe.PaymentIntent
 		err := json.Unmarshal(event.Data.Raw, &paymentIntent)
 		if err != nil {
-			p.logger.Error("Error parsing webhook JSON", err)
+			p.logger.Error("Error parsing stripe webhook payload", err)
 			return
 		}
 
@@ -435,6 +439,7 @@ func (p *paymentService) HandleStripeWebHook(ctx context.Context, event stripe.E
 
 	// TODO: change status of reservation to FAILED
 }
+
 func (p *paymentService) HandlePaypalWebHook(ctx context.Context, event PaypalWebhookPayload) {
 	// Extract metadata from the webhook payload
 	customID := event.Resource.CustomID
