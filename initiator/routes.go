@@ -39,7 +39,7 @@ func ListRoutes(
 		},
 		{
 			path:    "/reservations",
-			method:  http.MethodPost,
+			method:  http.MethodGet,
 			handler: rh.GetRoomReservations,
 		},
 		{
@@ -150,4 +150,11 @@ func ListRoutes(
 	}
 
 	return allRoutes
+}
+
+func RegisterRoutes(g *gin.RouterGroup, routes []route) {
+	for _, route := range routes {
+		route.middlewares = append(route.middlewares, route.handler)
+		g.Handle(route.method, route.path, route.middlewares...)
+	}
 }
