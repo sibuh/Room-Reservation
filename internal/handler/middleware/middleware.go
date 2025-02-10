@@ -75,9 +75,9 @@ func (m *middleware) Authenticate() gin.HandlerFunc {
 func (m *middleware) Authorize() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sub := ctx.Value("sub")
-		dom := ctx.Value("dom")
-		obj := ctx.Value("obj")
-		act := ctx.Value("act")
+		dom := ctx.Param("hotel_id")
+		obj := ctx.Request.URL
+		act := ctx.Request.Method
 		b, err := m.e.Enforce(sub, dom, obj, act)
 		if err != nil {
 			m.logger.Error("failed to enforce authorization policy", err)

@@ -10,7 +10,9 @@ import (
 	"reservation/internal/storage/db"
 
 	"github.com/casbin/casbin/v2"
+	crdbpgx "github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgxv5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
@@ -48,26 +50,66 @@ func (h *hotelService) Register(ctx context.Context, param RegisterHotelParam) (
 			RootError: apperror.ErrInvalidInput,
 		}
 	}
-	htl, err := h.CreateHotel(ctx, db.CreateHotelParams{
-		Name:    param.Name,
-		City:    param.City,
-		Country: param.Country,
-		OwnerID: pgtype.UUID{
-			Bytes: param.OwnerID,
-			Valid: true,
-		},
-		Location:  []float64{param.Location.Latitude, param.Location.Longitude},
-		Rating:    param.Rating,
-		ImageUrls: param.ImageURLs,
-	})
-
+	conn, err := h.Pool.Acquire(ctx)
 	if err != nil {
-		h.logger.Error("failed to register hotel", err)
+		h.logger.Error("failed to acquire connection", err)
 		return db.Hotel{}, &apperror.AppError{
 			ErrorCode: http.StatusInternalServerError,
-			RootError: apperror.ErrUnableToCreate,
+			RootError: errors.New("failed to register hotel"),
 		}
 	}
+	defer conn.Release()
+
+	var htl db.Hotel
+	crdbpgx.ExecuteTx(context.Background(), conn, pgx.TxOptions{}, func(p pgx.Tx) error {
+		queries := db.New(conn)
+		tx, err := conn.Begin(ctx)
+		if err != nil {
+			h.logger.Error("failed to create tx instance", err)
+			return &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to add room"),
+			}
+		}
+		qtx := queries.WithTx(tx)
+		htl, err = qtx.CreateHotel(ctx, db.CreateHotelParams{
+			Name:    param.Name,
+			City:    param.City,
+			Country: param.Country,
+			OwnerID: pgtype.UUID{
+				Bytes: param.OwnerID,
+				Valid: true,
+			},
+			Location:  []float64{param.Location.Latitude, param.Location.Longitude},
+			Rating:    param.Rating,
+			ImageUrls: param.ImageURLs,
+		})
+
+		if err != nil {
+			h.logger.Error("failed to register hotel", err)
+			return &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: apperror.ErrUnableToCreate,
+			}
+		}
+		_, err = h.e.AddPolicy("owner", htl.ID.String(), "*", "*")
+		if err != nil {
+			h.logger.Error("failed to added policy for created hotel", err)
+			return &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to add policy for created hotel"),
+			}
+		}
+		_, err = h.e.AddGroupingPolicy(param.OwnerID, "owner", htl.ID.String())
+		if err != nil {
+			h.logger.Error("failed to added policy for created hotel", err)
+			return &apperror.AppError{
+				ErrorCode: http.StatusInternalServerError,
+				RootError: errors.New("failed to add policy for created hotel"),
+			}
+		}
+		return nil
+	})
 
 	return htl, nil
 
