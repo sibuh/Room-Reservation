@@ -91,10 +91,13 @@ func Initiate() {
 	cancellationTime := viper.GetDuration("reservation.cancellation_time")
 	stripeSecretKey := os.Getenv("STRIPE_SECRET_KEY")
 
+	//initialize casbin policy enforcer
+	e := CasbinEnforcer("casbin/casbin.conf", "casbin/policy.csv")
+
 	//initialize services
 	userService := user.NewUserService(logger, queries, token_key, duration)
 	roomService := room.NewRoomService(pool, queries, logger, cancellationTime)
-	hotelService := hotel.NewHotelService(queries, logger, pool)
+	hotelService := hotel.NewHotelService(queries, logger, pool, e)
 	paymentService := payment.NewPaymentService(logger, queries, payment.PaymentProviderConfig{
 		BaseURL:      viper.GetString("paypal.base_url"),
 		ReturnURL:    viper.GetString("paypal_return_url"),
@@ -104,9 +107,6 @@ func Initiate() {
 		StripeSecret: stripeSecretKey,
 	})
 	roomTypeService := roomtype.NewRoomTypeService(logger, queries)
-
-	//initialize casbin policy enforcer
-	e := CasbinEnforcer("casbin/casbin.conf", "casbin/policy.csv")
 
 	//initialize middlewares
 	mw := middleware.NewMiddleware(logger, queries, token_key, e)

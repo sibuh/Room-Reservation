@@ -9,6 +9,7 @@ import (
 	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 
+	"github.com/casbin/casbin/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,13 +28,15 @@ type hotelService struct {
 	db.Querier
 	*pgxpool.Pool
 	logger *slog.Logger
+	e      casbin.IEnforcer
 }
 
-func NewHotelService(q db.Querier, logger *slog.Logger, pool *pgxpool.Pool) HotelService {
+func NewHotelService(q db.Querier, logger *slog.Logger, pool *pgxpool.Pool, e casbin.IEnforcer) HotelService {
 	return &hotelService{
 		Querier: q,
 		logger:  logger,
 		Pool:    pool,
+		e:       e,
 	}
 }
 
