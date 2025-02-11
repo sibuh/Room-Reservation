@@ -1,5 +1,4 @@
-p, admin, tenant1, data1, read
-p, admin, tenant2, data2, read
-
-g, alice, admin, tenant1
-g, alice, user, tenant2
+p, owner, 5243614f-7f3f-4605-982c-8a7a76d1abda, *, *
+p, owner, cc04b805-d97b-4f83-902e-1fc4e508a346, *, *
+g, d25aaa7b-1203-483f-8da8-a0683f933b0d, owner, 5243614f-7f3f-4605-982c-8a7a76d1abda
+g, d25aaa7b-1203-483f-8da8-a0683f933b0d, owner, cc04b805-d97b-4f83-902e-1fc4e508a346

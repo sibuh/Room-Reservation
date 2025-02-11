@@ -6,6 +6,6 @@ token:
 reservation:
   cancellation_time: 5m
 paypal:
-	baseURL: https://api.sandbox.paypal.com
-	returnURL: https://yourwebsite.com/success
-	cancelURL: https://yourwebsite.com/cancel
+  baseURL: https://api.sandbox.paypal.com
+  returnURL: https://yourwebsite.com/success
+  cancelURL: https://yourwebsite.com/cancel

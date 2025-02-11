@@ -81,7 +81,7 @@ func ListRoutes(
 			method:  http.MethodPost,
 			handler: hh.Register,
 			middlewares: []gin.HandlerFunc{
-				mw.Authorize(),
+				mw.Authenticate(),
 			},
 		},
 		{

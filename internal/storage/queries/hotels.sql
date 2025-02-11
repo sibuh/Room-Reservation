@@ -27,3 +27,6 @@ ORDER BY h.name;
 
 -- name: VerifyHotel :one
 UPDATE hotels SET status='VERIFIED' WHERE id=$1 RETURNING *;
+
+-- name: GetCountOfHotelsOfUser :one
+SELECT COUNT(id) FROM hotels WHERE owner_id=$1;

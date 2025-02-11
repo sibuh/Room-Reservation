@@ -53,6 +53,17 @@ func (q *Queries) CreateHotel(ctx context.Context, arg CreateHotelParams) (Hotel
 	return i, err
 }
 
+const getCountOfHotelsOfUser = `-- name: GetCountOfHotelsOfUser :one
+SELECT COUNT(id) FROM hotels WHERE owner_id=$1
+`
+
+func (q *Queries) GetCountOfHotelsOfUser(ctx context.Context, ownerID pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getCountOfHotelsOfUser, ownerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getHotelByName = `-- name: GetHotelByName :one
  select id, name, owner_id, rating, country, city, location, image_urls, status, created_at, updated_at from hotels where name=$1
 `
