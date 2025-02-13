@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"reservation/internal/apperror"
 	"reservation/internal/service/hotel"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/exp/slog"
 )
@@ -35,6 +33,13 @@ func NewHotelHandler(logger *slog.Logger, svc hotel.HotelService) HotelHandler {
 }
 func (h *hotelHandler) Register(c *gin.Context) {
 	param := hotel.RegisterHotelParam{}
+	if err := c.ShouldBind(&param); err != nil {
+		h.logger.Error("invalid input", err)
+		_ = c.Error(&apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: apperror.ErrInvalidInput,
+		})
+	}
 
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -45,10 +50,7 @@ func (h *hotelHandler) Register(c *gin.Context) {
 		})
 		return
 	}
-	values := form.Value
-	param.Name = values["name"][0]
-	param.City = values["city"][0]
-	param.Country = values["country"][0]
+
 	userID, ok := c.Value("user_id").(pgtype.UUID)
 	if !ok {
 		h.logger.Info("could not get owner id from context", errors.New("failed to get owner id from context"))
@@ -58,39 +60,7 @@ func (h *hotelHandler) Register(c *gin.Context) {
 		})
 		return
 	}
-	param.OwnerID = uuid.MustParse(userID.String())
-	param.Rating, err = strconv.ParseFloat(values["rating"][0], 64)
-	if err != nil {
-		h.logger.Error("failed to parse string to float64 for rating", err)
-		_ = c.Error(&apperror.AppError{
-			ErrorCode: http.StatusInternalServerError,
-			RootError: err,
-		})
-	}
-	if latitude := values["latitude"][0]; latitude != "" {
-		param.Location.Latitude, err = strconv.ParseFloat(latitude, 64)
-		if err != nil {
-			h.logger.Error("failed to parse latitude from multipart form", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusInternalServerError,
-				RootError: apperror.ErrBindingQuery,
-			})
-			return
-		}
-	}
-
-	if longitude := values["longitude"][0]; longitude != "" {
-		param.Location.Longitude, err = strconv.ParseFloat(longitude, 64)
-		if err != nil {
-			h.logger.Error("failed to parse longitude from multipart form", err)
-			_ = c.Error(&apperror.AppError{
-				ErrorCode: http.StatusInternalServerError,
-				RootError: errors.New("failed to parse longitude from multipart form"),
-			})
-			return
-		}
-
-	}
+	param.OwnerID = userID.Bytes
 
 	for _, file := range form.File["images"] {
 		savePath := "public/" + file.Filename

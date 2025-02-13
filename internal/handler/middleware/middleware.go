@@ -9,6 +9,7 @@ import (
 	"reservation/internal/storage/db"
 	"reservation/pkg/token"
 	"strings"
+	"time"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -93,10 +94,13 @@ func (m *middleware) Authorize() gin.HandlerFunc {
 }
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		start := time.Now()
 		c.Next()
+		fmt.Println("time the request took: ",time.Since(start))
 		if err := c.Err(); err != nil {
 			thrownError := err.(*apperror.AppError)
 			c.JSON(thrownError.ErrorCode, thrownError.RootError)
+			return
 		}
 	}
 }

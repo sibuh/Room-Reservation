@@ -30,8 +30,8 @@ type RegisterHotelParam struct {
 	OwnerID   uuid.UUID `form:"owner_id"`
 	ImageURLs []string  `form:"image_url"`
 	Location  struct {
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
+		Latitude  float64 `form:"latitude"`
+		Longitude float64 `form:"latitude"`
 	} `form:"location"`
 }
 
