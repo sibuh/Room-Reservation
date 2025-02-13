@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"reservation/internal/apperror"
 	"reservation/internal/service/hotel"
@@ -32,6 +33,8 @@ func NewHotelHandler(logger *slog.Logger, svc hotel.HotelService) HotelHandler {
 	}
 }
 func (h *hotelHandler) Register(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, time.Minute)
+	defer cancel()
 	param := hotel.RegisterHotelParam{}
 	if err := c.ShouldBind(&param); err != nil {
 		h.logger.Error("invalid input", err)
@@ -77,7 +80,7 @@ func (h *hotelHandler) Register(c *gin.Context) {
 
 	}
 
-	htl, err := h.service.Register(context.Background(), param)
+	htl, err := h.service.Register(ctx, param)
 	if err != nil {
 		_ = c.Error(err)
 		return

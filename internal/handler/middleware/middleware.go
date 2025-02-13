@@ -96,9 +96,9 @@ func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
-		fmt.Println("time the request took: ",time.Since(start))
-		if err := c.Err(); err != nil {
-			thrownError := err.(*apperror.AppError)
+		fmt.Println("time the request took: ", time.Since(start))
+		if len(c.Errors) > 0 {
+			thrownError := c.Errors[0].Err.(*apperror.AppError)
 			c.JSON(thrownError.ErrorCode, thrownError.RootError)
 			return
 		}
