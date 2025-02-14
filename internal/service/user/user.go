@@ -3,6 +3,9 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"reservation/internal/apperror"
 	"reservation/internal/storage/db"
 	"reservation/pkg/pass"
 	"reservation/pkg/token"
@@ -73,16 +76,26 @@ func (us *userService) Signup(ctx context.Context, sup SignupRequest) (string, e
 func (us *userService) Login(ctx context.Context, lin LoginRequest) (string, error) {
 	if err := lin.Validate(); err != nil {
 		us.logger.Info("invalid input for login", err)
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: ErrInvalidInput,
+		}
 	}
 
 	user, err := us.Querier.GetUser(ctx, lin.Email)
 	if err != nil {
-		return "", err
+		us.logger.Info("user does not exist", fmt.Sprintf("email: %s", lin.Email), err)
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusNotFound,
+			RootError: apperror.ErrRecordNotFound,
+		}
 
 	}
 	if !pass.CheckPasswordHash(lin.Password, user.Password) {
-		return "", errors.New("incorrect password ")
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: errors.New("incorrect password"),
+		}
 	}
 	tkn, err := token.CreateToken(token.Payload{
 		ID:        uuid.UUID(user.ID.Bytes),
@@ -90,7 +103,10 @@ func (us *userService) Login(ctx context.Context, lin LoginRequest) (string, err
 		Duration:  us.Duration,
 	}, us.key, us.logger)
 	if err != nil {
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: err,
+		}
 	}
 	return tkn, nil
 }
@@ -101,7 +117,10 @@ func (us *userService) RefreshToken(ctx context.Context, userID uuid.UUID) (stri
 		Duration:  us.Duration,
 	}, us.key, us.logger)
 	if err != nil {
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: err,
+		}
 	}
 	return tkn, nil
 }
