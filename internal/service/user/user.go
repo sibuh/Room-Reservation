@@ -39,12 +39,18 @@ func NewUserService(logger *slog.Logger, db db.Querier, key string, dur time.Dur
 func (us *userService) Signup(ctx context.Context, sup SignupRequest) (string, error) {
 	if err := sup.Validate(); err != nil {
 		us.logger.Info("invalid input for signup", err.Error())
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusBadRequest,
+			RootError: err,
+		}
 	}
 	hash, err := pass.HashPassword(sup.Password)
 	if err != nil {
 		us.logger.Error("failed to hash password", err)
-		return "", ErrPasswordHash
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("password hashing failed"),
+		}
 	}
 	sup.Password = hash
 	usr, err := us.CreateUser(ctx, db.CreateUserParams{
@@ -57,7 +63,10 @@ func (us *userService) Signup(ctx context.Context, sup SignupRequest) (string, e
 	})
 	if err != nil {
 		us.logger.Error("failed to create user", err)
-		return "", ErrCreateUser
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: ErrCreateUser,
+		}
 	}
 	// create token
 	t, err := token.CreateToken(token.Payload{
@@ -67,7 +76,10 @@ func (us *userService) Signup(ctx context.Context, sup SignupRequest) (string, e
 	}, us.key, us.logger)
 	if err != nil {
 		us.logger.Error("failed to create token", err)
-		return "", err
+		return "", &apperror.AppError{
+			ErrorCode: http.StatusInternalServerError,
+			RootError: errors.New("failed to create token"),
+		}
 	}
 	return t, nil
 
